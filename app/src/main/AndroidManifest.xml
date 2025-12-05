@@ -16,6 +16,7 @@
         <!-- Activity khởi động app -->
         <activity
             android:name=".authentication.LoginActivity"
+            android:windowSoftInputMode="adjustResize|stateHidden"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
