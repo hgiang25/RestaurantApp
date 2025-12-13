@@ -1,6 +1,7 @@
 package com.example.restaurantapp.models;
 
 public class MenuItem {
+    private String id;
     private String name;
     private double price;
     private String category;
@@ -14,6 +15,9 @@ public class MenuItem {
         this.category = category;
         this.available = available;
     }
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

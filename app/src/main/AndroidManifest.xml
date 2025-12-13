@@ -23,14 +23,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- Authentication -->
         <activity
             android:name=".authentication.RegisterActivity"
             android:exported="false" />
+        <activity 
+            android:name=".authentication.RegisterStaffActivity"
+            android:exported="false" />
+        
+        <!-- Main Activities -->
         <activity android:name=".MainActivity"/>
         <activity android:name=".AdminActivity"/>
-        <activity android:name=".authentication.RegisterStaffActivity"/>
-
-
+        <activity android:name=".StaffActivity"/>
+        <activity android:name=".CustomerActivity"/>
 
     </application>
 

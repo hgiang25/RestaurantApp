@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp;
 import java.util.List;
 
 public class OrderModel {
+    private String id;
     private String customerId;
     private String staffId; // có thể null nếu chưa được xử lý
     private String tableId;
@@ -21,6 +22,9 @@ public class OrderModel {
         this.status = status;
         this.createdAt = createdAt;
     }
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }

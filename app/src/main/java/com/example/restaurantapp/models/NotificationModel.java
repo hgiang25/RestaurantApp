@@ -3,6 +3,7 @@ package com.example.restaurantapp.models;
 import com.google.firebase.Timestamp;
 
 public class NotificationModel {
+    private String id;
     private String userId;
     private String message;
     private Timestamp createdAt;
@@ -12,9 +13,11 @@ public class NotificationModel {
     public NotificationModel(String userId, String message, Timestamp createdAt) {
         this.userId = userId;
         this.message = message;
-        this.message = message;
         this.createdAt = createdAt;
     }
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }

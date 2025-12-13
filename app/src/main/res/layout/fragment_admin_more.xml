@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Thêm"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#1A2B4C"
+            android:padding="16dp"
+            android:background="@color/white"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnInventory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📦 Quản lý kho nguyên liệu"
+                android:textAlignment="textStart"
+                android:textColor="#1A2B4C"
+                android:backgroundTint="@color/white"
+                android:layout_marginBottom="8dp"
+                style="@style/Widget.Material3.Button.ElevatedButton"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPromotions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🎁 Khuyến mãi"
+                android:textAlignment="textStart"
+                android:textColor="#1A2B4C"
+                android:backgroundTint="@color/white"
+                android:layout_marginBottom="8dp"
+                style="@style/Widget.Material3.Button.ElevatedButton"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReports"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📊 Báo cáo"
+                android:textAlignment="textStart"
+                android:textColor="#1A2B4C"
+                android:backgroundTint="@color/white"
+                android:layout_marginBottom="8dp"
+                style="@style/Widget.Material3.Button.ElevatedButton"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNotifications"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔔 Gửi thông báo"
+                android:textAlignment="textStart"
+                android:textColor="#1A2B4C"
+                android:backgroundTint="@color/white"
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Material3.Button.ElevatedButton"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Đăng xuất"
+                android:textColor="@color/white"
+                android:backgroundTint="#F44336"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

@@ -1,3 +1,99 @@
 <resources>
-    <string name="app_name">RestaurantApp</string>
+    <string name="app_name">Restaurant App</string>
+
+    <!-- Authentication -->
+    <string name="login">Đăng nhập</string>
+    <string name="register">Đăng ký</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="email">Email</string>
+    <string name="password">Mật khẩu</string>
+    <string name="username">Tên người dùng</string>
+    <string name="confirm_password">Xác nhận mật khẩu</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="no_account">Chưa có tài khoản?</string>
+    <string name="has_account">Đã có tài khoản?</string>
+
+    <!-- Navigation -->
+    <string name="nav_tables">Bàn</string>
+    <string name="nav_orders">Đơn hàng</string>
+    <string name="nav_timesheet">Chấm công</string>
+    <string name="nav_notifications">Thông báo</string>
+    <string name="nav_menu">Thực đơn</string>
+    <string name="nav_profile">Hồ sơ</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_staff">Nhân viên</string>
+    <string name="nav_more">Thêm</string>
+
+    <!-- Table Status -->
+    <string name="table_free">Trống</string>
+    <string name="table_occupied">Đang dùng</string>
+    <string name="table_reserved">Đã đặt</string>
+
+    <!-- Order Status -->
+    <string name="order_pending">Chờ xác nhận</string>
+    <string name="order_confirmed">Đã xác nhận</string>
+    <string name="order_preparing">Đang chuẩn bị</string>
+    <string name="order_served">Đã phục vụ</string>
+    <string name="order_paid">Đã thanh toán</string>
+    <string name="order_cancelled">Đã hủy</string>
+
+    <!-- Actions -->
+    <string name="add">Thêm</string>
+    <string name="edit">Sửa</string>
+    <string name="delete">Xóa</string>
+    <string name="save">Lưu</string>
+    <string name="cancel">Hủy</string>
+    <string name="confirm">Xác nhận</string>
+    <string name="update">Cập nhật</string>
+    <string name="close">Đóng</string>
+    <string name="search">Tìm kiếm</string>
+    <string name="filter">Lọc</string>
+
+    <!-- Menu -->
+    <string name="add_to_cart">Thêm vào giỏ</string>
+    <string name="view_cart">Xem giỏ hàng</string>
+    <string name="place_order">Đặt món</string>
+    <string name="empty_cart">Giỏ hàng trống</string>
+    <string name="total">Tổng</string>
+    <string name="available">Còn hàng</string>
+    <string name="unavailable">Hết hàng</string>
+
+    <!-- Categories -->
+    <string name="all_categories">Tất cả</string>
+    <string name="category_food">Món ăn</string>
+    <string name="category_drink">Thức uống</string>
+    <string name="category_dessert">Tráng miệng</string>
+    <string name="category_combo">Combo</string>
+
+    <!-- Staff -->
+    <string name="check_in">Check In</string>
+    <string name="check_out">Check Out</string>
+    <string name="shift_morning">Ca sáng</string>
+    <string name="shift_afternoon">Ca chiều</string>
+    <string name="shift_evening">Ca tối</string>
+
+    <!-- Admin -->
+    <string name="total_orders">Tổng đơn hàng</string>
+    <string name="total_revenue">Doanh thu</string>
+    <string name="total_customers">Khách hàng</string>
+    <string name="total_staff">Nhân viên</string>
+    <string name="promotions">Khuyến mãi</string>
+    <string name="inventory">Kho hàng</string>
+    <string name="reports">Báo cáo</string>
+    <string name="settings">Cài đặt</string>
+
+    <!-- Messages -->
+    <string name="loading">Đang tải...</string>
+    <string name="no_data">Không có dữ liệu</string>
+    <string name="error_occurred">Đã xảy ra lỗi</string>
+    <string name="success">Thành công</string>
+    <string name="confirm_delete">Bạn có chắc muốn xóa?</string>
+    <string name="confirm_logout">Bạn có chắc muốn đăng xuất?</string>
+
+    <!-- Profile -->
+    <string name="loyalty_points">Điểm tích lũy</string>
+    <string name="order_history">Lịch sử đơn hàng</string>
+    <string name="edit_profile">Chỉnh sửa hồ sơ</string>
+    <string name="change_password">Đổi mật khẩu</string>
+
 </resources>
