@@ -52,4 +52,5 @@ dependencies {
     implementation ("com.google.firebase:firebase-auth")
     implementation ("com.google.firebase:firebase-database")
     implementation ("com.google.firebase:firebase-firestore") // nếu dùng Firestore
+    implementation ("com.airbnb.android:lottie:6.4.1")  // Hoặc phiên bản mới nhất, kiểm tra trên Maven
 }
