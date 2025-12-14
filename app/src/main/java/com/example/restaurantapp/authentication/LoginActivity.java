@@ -2,6 +2,7 @@ package com.example.restaurantapp.authentication;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.ActivityOptions;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
@@ -44,9 +45,12 @@ public class LoginActivity extends AppCompatActivity {
         // Xử lý login
         btnLogin.setOnClickListener(v -> handleLogin());
 
-        // Chuyển sang RegisterActivity
-        txtRegister.setOnClickListener(v ->
-                startActivity(new Intent(LoginActivity.this, RegisterActivity.class)));
+        // Chuyển sang RegisterActivity với animation
+        txtRegister.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(intent, ActivityOptions.makeCustomAnimation(this,
+                    R.anim.slide_in_right, R.anim.slide_out_left).toBundle());
+        });
     }
 
 
@@ -76,18 +80,21 @@ public class LoginActivity extends AppCompatActivity {
                                     return;
                                 }
 
-                                // Chuyển màn hình theo role
+                                // Chuyển màn hình theo role với animation
+                                Intent intent;
                                 switch (role) {
                                     case "admin":
-                                        startActivity(new Intent(this, AdminActivity.class));
+                                        intent = new Intent(this, AdminActivity.class);
                                         break;
                                     case "staff":
-                                        startActivity(new Intent(this, StaffActivity.class));
+                                        intent = new Intent(this, StaffActivity.class);
                                         break;
-                                    case "customer":
-                                        startActivity(new Intent(this, CustomerActivity.class));
+                                    default:
+                                        intent = new Intent(this, CustomerActivity.class);
                                         break;
                                 }
+                                startActivity(intent, ActivityOptions.makeCustomAnimation(this,
+                                        R.anim.slide_in_right, R.anim.slide_out_left).toBundle());
                                 finish();
                             })
                             .addOnFailureListener(e -> {

@@ -4,71 +4,108 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Primary Colors -->
-    <color name="primary">#007BFF</color>
-    <color name="primary_dark">#0056b3</color>
-    <color name="primary_light">#66B3FF</color>
-    <color name="primary_variant">#3700B3</color>
+    <!-- Primary Colors - Modern Purple/Blue Gradient -->
+    <color name="primary">#6C63FF</color>
+    <color name="primary_dark">#5A52D5</color>
+    <color name="primary_light">#8B85FF</color>
+    <color name="primary_variant">#4A42C8</color>
+    <color name="primary_surface">#F0EFFF</color>
 
-    <!-- Secondary Colors -->
-    <color name="secondary">#FF5722</color>
-    <color name="secondary_dark">#E64A19</color>
-    <color name="secondary_light">#FF8A65</color>
-    <color name="secondary_variant">#03DAC6</color>
+    <!-- Secondary Colors - Coral -->
+    <color name="secondary">#FF6B6B</color>
+    <color name="secondary_dark">#EE5A5A</color>
+    <color name="secondary_light">#FF8A8A</color>
+    <color name="secondary_variant">#FF5252</color>
 
-    <!-- Accent Colors -->
-    <color name="accent">#FFC107</color>
-    <color name="accent_dark">#FFA000</color>
-    <color name="accent_light">#FFD54F</color>
+    <!-- Accent Colors - Teal -->
+    <color name="accent">#4ECDC4</color>
+    <color name="accent_dark">#3DBDB5</color>
+    <color name="accent_light">#7EE8E1</color>
+
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#6C63FF</color>
+    <color name="gradient_end">#4ECDC4</color>
+    <color name="gradient_orange_start">#FF6B6B</color>
+    <color name="gradient_orange_end">#FFA726</color>
 
     <!-- Background Colors -->
-    <color name="background">#F5F5F5</color>
+    <color name="background">#F8F9FE</color>
     <color name="background_dark">#121212</color>
     <color name="surface">#FFFFFF</color>
     <color name="surface_dark">#1E1E1E</color>
     <color name="card_background">#FFFFFF</color>
+    <color name="card_background_alt">#F5F7FF</color>
 
     <!-- Text Colors -->
-    <color name="text_primary">#1A2B4C</color>
-    <color name="text_secondary">#666666</color>
-    <color name="text_hint">#999999</color>
+    <color name="text_primary">#1A1F36</color>
+    <color name="text_secondary">#8E94A8</color>
+    <color name="text_hint">#B8BCC8</color>
     <color name="text_on_primary">#FFFFFF</color>
     <color name="text_on_secondary">#FFFFFF</color>
+    <color name="text_link">#6C63FF</color>
 
-    <!-- Status Colors -->
+    <!-- Status Colors with Background -->
     <color name="status_free">#4CAF50</color>
-    <color name="status_occupied">#FF5722</color>
-    <color name="status_reserved">#FFC107</color>
+    <color name="status_free_bg">#E8F5E9</color>
+    <color name="status_occupied">#FF6B6B</color>
+    <color name="status_occupied_bg">#FFEBEE</color>
+    <color name="status_reserved">#FFA726</color>
+    <color name="status_reserved_bg">#FFF3E0</color>
 
-    <color name="status_pending">#FF9800</color>
-    <color name="status_confirmed">#2196F3</color>
-    <color name="status_preparing">#9C27B0</color>
-    <color name="status_served">#4CAF50</color>
-    <color name="status_paid">#8BC34A</color>
-    <color name="status_cancelled">#F44336</color>
+    <color name="status_pending">#FFA726</color>
+    <color name="status_pending_bg">#FFF3E0</color>
+    <color name="status_confirmed">#42A5F5</color>
+    <color name="status_confirmed_bg">#E3F2FD</color>
+    <color name="status_preparing">#AB47BC</color>
+    <color name="status_preparing_bg">#F3E5F5</color>
+    <color name="status_served">#66BB6A</color>
+    <color name="status_served_bg">#E8F5E9</color>
+    <color name="status_paid">#26A69A</color>
+    <color name="status_paid_bg">#E0F2F1</color>
+    <color name="status_cancelled">#EF5350</color>
+    <color name="status_cancelled_bg">#FFEBEE</color>
 
     <!-- UI Elements -->
-    <color name="divider">#E0E0E0</color>
-    <color name="border">#BDBDBD</color>
-    <color name="ripple">#1A007BFF</color>
-    <color name="shadow">#1A000000</color>
+    <color name="divider">#E8EAF0</color>
+    <color name="border">#E0E3EB</color>
+    <color name="ripple">#1A6C63FF</color>
+    <color name="shadow">#14000000</color>
+    <color name="overlay">#80000000</color>
 
     <!-- Semantic Colors -->
     <color name="success">#4CAF50</color>
-    <color name="warning">#FFC107</color>
-    <color name="error">#F44336</color>
-    <color name="info">#2196F3</color>
+    <color name="success_bg">#E8F5E9</color>
+    <color name="warning">#FFA726</color>
+    <color name="warning_bg">#FFF3E0</color>
+    <color name="error">#EF5350</color>
+    <color name="error_bg">#FFEBEE</color>
+    <color name="info">#42A5F5</color>
+    <color name="info_bg">#E3F2FD</color>
 
     <!-- Dashboard Colors -->
-    <color name="dashboard_blue">#007BFF</color>
-    <color name="dashboard_orange">#FF5722</color>
-    <color name="dashboard_green">#4CAF50</color>
-    <color name="dashboard_purple">#9C27B0</color>
+    <color name="dashboard_blue">#6C63FF</color>
+    <color name="dashboard_blue_bg">#F0EFFF</color>
+    <color name="dashboard_orange">#FF6B6B</color>
+    <color name="dashboard_orange_bg">#FFF0F0</color>
+    <color name="dashboard_green">#4ECDC4</color>
+    <color name="dashboard_green_bg">#E8FAF8</color>
+    <color name="dashboard_purple">#AB47BC</color>
+    <color name="dashboard_purple_bg">#F8E8FA</color>
 
     <!-- Category Colors -->
-    <color name="category_food">#FF5722</color>
-    <color name="category_drink">#2196F3</color>
-    <color name="category_dessert">#E91E63</color>
-    <color name="category_combo">#9C27B0</color>
+    <color name="category_food">#FF6B6B</color>
+    <color name="category_drink">#42A5F5</color>
+    <color name="category_dessert">#EC407A</color>
+    <color name="category_combo">#AB47BC</color>
+
+    <!-- Input Colors -->
+    <color name="input_background">#F5F7FF</color>
+    <color name="input_stroke">#E0E3EB</color>
+    <color name="input_stroke_focused">#6C63FF</color>
+
+    <!-- Color State Lists -->
+    <color name="text_input_stroke_color">#E0E3EB</color>
+    <color name="chip_background_color">#F0F2F8</color>
+    <color name="chip_text_color">#1A1F36</color>
 
 </resources>

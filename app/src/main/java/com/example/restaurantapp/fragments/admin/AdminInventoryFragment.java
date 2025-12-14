@@ -54,6 +54,7 @@ public class AdminInventoryFragment extends Fragment {
 
     private void loadInventory() {
         FirebaseService.getInstance().listenInventoryRealtime((value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
 
             inventoryList.clear();
@@ -64,11 +65,13 @@ public class AdminInventoryFragment extends Fragment {
                     inventoryList.add(item);
                 }
             }
-            adapter.notifyDataSetChanged();
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
     }
 
     private void showAddInventoryDialog() {
+        if (getContext() == null || !isAdded()) return;
+        
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_inventory, null);
 
         EditText edtName = dialogView.findViewById(R.id.edtItemName);

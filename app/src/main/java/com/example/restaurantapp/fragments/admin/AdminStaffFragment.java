@@ -52,6 +52,7 @@ public class AdminStaffFragment extends Fragment {
 
     private void loadStaff() {
         FirebaseService.getInstance().listenUsersByRoleRealtime("staff", (value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
 
             staffList.clear();
@@ -62,11 +63,13 @@ public class AdminStaffFragment extends Fragment {
                     staffList.add(user);
                 }
             }
-            adapter.notifyDataSetChanged();
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
     }
 
     private void onStaffClick(User staff) {
+        if (getContext() == null || !isAdded()) return;
+        
         // Có thể mở dialog để cập nhật role hoặc xem chi tiết
         new android.app.AlertDialog.Builder(getContext())
                 .setTitle(staff.getUsername())

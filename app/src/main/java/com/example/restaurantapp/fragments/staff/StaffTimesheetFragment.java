@@ -68,6 +68,7 @@ public class StaffTimesheetFragment extends Fragment {
         if (staffId == null) return;
 
         FirebaseService.getInstance().listenAttendanceByStaffRealtime(staffId, (value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
 
             attendanceList.clear();
@@ -82,17 +83,19 @@ public class StaffTimesheetFragment extends Fragment {
                     // Kiểm tra xem có ca làm chưa checkout không
                     if (attendance.getCheckOut() == null) {
                         currentAttendanceId = doc.getId();
-                        txtCurrentShift.setText("Ca hiện tại: " + attendance.getShift());
-                        btnCheckIn.setEnabled(false);
-                        btnCheckOut.setEnabled(true);
+                        if (txtCurrentShift != null) {
+                            txtCurrentShift.setText("Ca hiện tại: " + attendance.getShift());
+                        }
+                        if (btnCheckIn != null) btnCheckIn.setEnabled(false);
+                        if (btnCheckOut != null) btnCheckOut.setEnabled(true);
                     }
                 }
             }
 
             if (currentAttendanceId == null) {
-                txtCurrentShift.setText("Chưa check-in");
-                btnCheckIn.setEnabled(true);
-                btnCheckOut.setEnabled(false);
+                if (txtCurrentShift != null) txtCurrentShift.setText("Chưa check-in");
+                if (btnCheckIn != null) btnCheckIn.setEnabled(true);
+                if (btnCheckOut != null) btnCheckOut.setEnabled(false);
             }
 
             // Sắp xếp theo thời gian
@@ -101,13 +104,13 @@ public class StaffTimesheetFragment extends Fragment {
                 return a2.getCheckIn().compareTo(a1.getCheckIn());
             });
 
-            adapter.notifyDataSetChanged();
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
     }
 
     private void handleCheckIn() {
         String staffId = FirebaseService.getInstance().getCurrentUserId();
-        if (staffId == null) return;
+        if (staffId == null || !isAdded() || getContext() == null) return;
 
         // Xác định ca làm dựa trên giờ hiện tại
         int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
@@ -121,15 +124,31 @@ public class StaffTimesheetFragment extends Fragment {
         }
 
         FirebaseService.getInstance().addAttendance(staffId, shift, Timestamp.now(),
-                docRef -> Toast.makeText(getContext(), "Check-in thành công!", Toast.LENGTH_SHORT).show(),
-                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                docRef -> {
+                    if (isAdded() && getContext() != null) {
+                        Toast.makeText(getContext(), "Check-in thành công!", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                e -> {
+                    if (isAdded() && getContext() != null) {
+                        Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void handleCheckOut() {
-        if (currentAttendanceId == null) return;
+        if (currentAttendanceId == null || !isAdded() || getContext() == null) return;
 
         FirebaseService.getInstance().updateAttendanceCheckOut(currentAttendanceId, Timestamp.now(),
-                unused -> Toast.makeText(getContext(), "Check-out thành công!", Toast.LENGTH_SHORT).show(),
-                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                unused -> {
+                    if (isAdded() && getContext() != null) {
+                        Toast.makeText(getContext(), "Check-out thành công!", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                e -> {
+                    if (isAdded() && getContext() != null) {
+                        Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }

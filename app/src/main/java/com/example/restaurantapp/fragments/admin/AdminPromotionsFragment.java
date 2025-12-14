@@ -61,6 +61,7 @@ public class AdminPromotionsFragment extends Fragment {
 
     private void loadPromotions() {
         FirebaseService.getInstance().listenPromotionsRealtime((value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
 
             promotionList.clear();
@@ -71,11 +72,13 @@ public class AdminPromotionsFragment extends Fragment {
                     promotionList.add(promo);
                 }
             }
-            adapter.notifyDataSetChanged();
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
     }
 
     private void showAddPromotionDialog() {
+        if (getContext() == null || !isAdded()) return;
+        
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_promotion, null);
 
         EditText edtName = dialogView.findViewById(R.id.edtPromoName);

@@ -17,7 +17,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 public class AdminDashboardFragment extends Fragment {
 
     private TextView txtTotalOrders, txtTotalRevenue, txtTotalStaff, txtTotalTables;
-    private TextView txtPendingOrders, txtTodayOrders;
+    private TextView txtPendingOrders;
 
     @Nullable
     @Override
@@ -29,7 +29,6 @@ public class AdminDashboardFragment extends Fragment {
         txtTotalStaff = view.findViewById(R.id.txtTotalStaff);
         txtTotalTables = view.findViewById(R.id.txtTotalTables);
         txtPendingOrders = view.findViewById(R.id.txtPendingOrders);
-        txtTodayOrders = view.findViewById(R.id.txtTodayOrders);
 
         loadDashboardData();
 
@@ -39,6 +38,7 @@ public class AdminDashboardFragment extends Fragment {
     private void loadDashboardData() {
         // Load tổng số đơn hàng
         FirebaseService.getInstance().listenOrdersRealtime((value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
             
             int total = value.size();
@@ -66,21 +66,23 @@ public class AdminDashboardFragment extends Fragment {
                 }
             }
             
-            txtTotalOrders.setText(String.valueOf(total));
-            txtPendingOrders.setText(pending + " chờ xử lý");
-            txtTotalRevenue.setText(String.format("%,.0f đ", revenue));
+            if (txtTotalOrders != null) txtTotalOrders.setText(String.valueOf(total));
+            if (txtPendingOrders != null) txtPendingOrders.setText(pending + " chờ xử lý");
+            if (txtTotalRevenue != null) txtTotalRevenue.setText(String.format("%,.0f đ", revenue));
         });
 
         // Load số nhân viên
         FirebaseService.getInstance().listenUsersByRoleRealtime("staff", (value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
-            txtTotalStaff.setText(String.valueOf(value.size()));
+            if (txtTotalStaff != null) txtTotalStaff.setText(String.valueOf(value.size()));
         });
 
         // Load số bàn
         FirebaseService.getInstance().listenTablesRealtime((value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
-            txtTotalTables.setText(String.valueOf(value.size()));
+            if (txtTotalTables != null) txtTotalTables.setText(String.valueOf(value.size()));
         });
     }
 }

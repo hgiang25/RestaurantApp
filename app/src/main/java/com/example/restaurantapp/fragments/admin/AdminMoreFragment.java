@@ -57,6 +57,8 @@ public class AdminMoreFragment extends Fragment {
     }
 
     private void showBroadcastDialog() {
+        if (getContext() == null || !isAdded()) return;
+        
         LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 10);
@@ -72,13 +74,24 @@ public class AdminMoreFragment extends Fragment {
         new AlertDialog.Builder(getContext())
                 .setTitle("Gửi thông báo")
                 .setView(layout)
-                .setItems(roleLabels, (dialog, which) -> {
+                .setPositiveButton("Tiếp tục", (dialog, which) -> {
                     String message = edtMessage.getText().toString().trim();
                     if (message.isEmpty()) {
                         Toast.makeText(getContext(), "Vui lòng nhập nội dung", Toast.LENGTH_SHORT).show();
                         return;
                     }
+                    showTargetSelectionDialog(message, roles, roleLabels);
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
 
+    private void showTargetSelectionDialog(String message, String[] roles, String[] roleLabels) {
+        if (getContext() == null || !isAdded()) return;
+        
+        new AlertDialog.Builder(getContext())
+                .setTitle("Gửi đến")
+                .setItems(roleLabels, (dialog, which) -> {
                     java.util.List<String> targetRoles;
                     if (which == 2) {
                         targetRoles = Arrays.asList("staff", "customer");
@@ -87,8 +100,16 @@ public class AdminMoreFragment extends Fragment {
                     }
 
                     FirebaseService.getInstance().broadcastNotification(message, targetRoles,
-                            unused -> Toast.makeText(getContext(), "Đã gửi thông báo!", Toast.LENGTH_SHORT).show(),
-                            e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                            unused -> {
+                                if (getContext() != null && isAdded()) {
+                                    Toast.makeText(getContext(), "Đã gửi thông báo!", Toast.LENGTH_SHORT).show();
+                                }
+                            },
+                            e -> {
+                                if (getContext() != null && isAdded()) {
+                                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
                 })
                 .setNegativeButton("Hủy", null)
                 .show();

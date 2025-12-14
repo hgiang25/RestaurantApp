@@ -54,6 +54,7 @@ public class AdminTablesFragment extends Fragment {
 
     private void loadTables() {
         FirebaseService.getInstance().listenTablesRealtime((value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
 
             tableList.clear();
@@ -64,11 +65,13 @@ public class AdminTablesFragment extends Fragment {
                     tableList.add(table);
                 }
             }
-            adapter.notifyDataSetChanged();
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
     }
 
     private void showAddTableDialog() {
+        if (getContext() == null || !isAdded()) return;
+        
         LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 10);

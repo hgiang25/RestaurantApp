@@ -3,56 +3,123 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5">
+    android:background="@color/background">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <TextView
+        <!-- Modern Header with Search -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Thực đơn"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#1A2B4C"
-            android:padding="16dp"
-            android:background="@color/white"/>
+            android:background="@drawable/gradient_primary">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🍽️ Thực đơn"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:fontFamily="sans-serif-medium"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Khám phá các món ăn ngon"
+                    android:textSize="14sp"
+                    android:textColor="#B8FFFFFF"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- Search Bar -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_search"
+                            app:tint="@color/text_hint"/>
+
+                        <EditText
+                            android:id="@+id/edtSearch"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="12dp"
+                            android:background="@null"
+                            android:hint="Tìm món ăn..."
+                            android:textColorHint="@color/text_hint"
+                            android:textSize="14sp"/>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+        <!-- Category Chips -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="none"
-            android:background="@color/white"
-            android:paddingHorizontal="8dp"
-            android:paddingBottom="8dp">
+            android:background="@color/surface"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="12dp">
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupCategories"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:singleSelection="true"/>
+                app:singleSelection="true"
+                app:chipSpacingHorizontal="8dp"/>
 
         </HorizontalScrollView>
 
+        <!-- Menu RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerMenu"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="8dp"
-            android:clipToPadding="false"/>
+            android:padding="12dp"
+            android:clipToPadding="false"
+            android:layoutAnimation="@anim/layout_animation_fall_down"/>
 
     </LinearLayout>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <!-- Modern FAB -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabCart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:src="@drawable/ic_cart"
-        android:contentDescription="Giỏ hàng"
-        app:backgroundTint="#007BFF"/>
+        android:layout_margin="20dp"
+        android:text="Giỏ hàng"
+        android:textColor="@color/white"
+        app:icon="@drawable/ic_cart"
+        app:iconTint="@color/white"
+        app:backgroundTint="@color/secondary"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.App.FAB"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

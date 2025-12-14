@@ -58,6 +58,7 @@ public class AdminMenuFragment extends Fragment {
 
     private void loadMenu() {
         FirebaseService.getInstance().listenMenuRealtime((value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
 
             menuList.clear();
@@ -68,11 +69,13 @@ public class AdminMenuFragment extends Fragment {
                     menuList.add(item);
                 }
             }
-            adapter.notifyDataSetChanged();
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
     }
 
     private void showAddMenuDialog() {
+        if (getContext() == null || !isAdded()) return;
+        
         LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 10);

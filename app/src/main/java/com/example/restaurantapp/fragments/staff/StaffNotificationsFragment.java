@@ -50,6 +50,7 @@ public class StaffNotificationsFragment extends Fragment {
         if (userId == null) return;
 
         FirebaseService.getInstance().listenNotificationsRealtime(userId, (value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
 
             notificationList.clear();
@@ -62,14 +63,14 @@ public class StaffNotificationsFragment extends Fragment {
             }
 
             if (notificationList.isEmpty()) {
-                txtEmpty.setVisibility(View.VISIBLE);
-                recyclerView.setVisibility(View.GONE);
+                if (txtEmpty != null) txtEmpty.setVisibility(View.VISIBLE);
+                if (recyclerView != null) recyclerView.setVisibility(View.GONE);
             } else {
-                txtEmpty.setVisibility(View.GONE);
-                recyclerView.setVisibility(View.VISIBLE);
+                if (txtEmpty != null) txtEmpty.setVisibility(View.GONE);
+                if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
             }
 
-            adapter.notifyDataSetChanged();
+            if (adapter != null) adapter.notifyDataSetChanged();
         });
     }
 }

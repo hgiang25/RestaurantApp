@@ -44,6 +44,7 @@ public class AdminReportsFragment extends Fragment {
 
     private void loadReports() {
         FirebaseService.getInstance().listenOrdersRealtime((value, error) -> {
+            if (!isAdded() || getContext() == null) return;
             if (error != null || value == null) return;
 
             int todayOrders = 0;
@@ -96,13 +97,13 @@ public class AdminReportsFragment extends Fragment {
                 }
             }
 
-            tvTodayOrders.setText(String.valueOf(todayOrders));
-            tvTodayRevenue.setText(String.format(Locale.getDefault(), "%,.0fđ", todayRevenue));
-            tvMonthRevenue.setText(String.format(Locale.getDefault(), "%,.0fđ", monthRevenue));
-            tvTotalOrders.setText(String.valueOf(totalOrders));
-            tvPendingOrders.setText(String.valueOf(pendingOrders));
-            tvCompletedOrders.setText(String.valueOf(completedOrders));
-            tvCancelledOrders.setText(String.valueOf(cancelledOrders));
+            if (tvTodayOrders != null) tvTodayOrders.setText(String.valueOf(todayOrders));
+            if (tvTodayRevenue != null) tvTodayRevenue.setText(String.format(Locale.getDefault(), "%,.0fđ", todayRevenue));
+            if (tvMonthRevenue != null) tvMonthRevenue.setText(String.format(Locale.getDefault(), "%,.0fđ", monthRevenue));
+            if (tvTotalOrders != null) tvTotalOrders.setText(String.valueOf(totalOrders));
+            if (tvPendingOrders != null) tvPendingOrders.setText(String.valueOf(pendingOrders));
+            if (tvCompletedOrders != null) tvCompletedOrders.setText(String.valueOf(completedOrders));
+            if (tvCancelledOrders != null) tvCancelledOrders.setText(String.valueOf(cancelledOrders));
         });
     }
 }
