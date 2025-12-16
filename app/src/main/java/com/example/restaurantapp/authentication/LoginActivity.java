@@ -51,11 +51,11 @@ public class LoginActivity extends AppCompatActivity {
         txtRegister = findViewById(R.id.txtRegister);
 
         // Ánh xạ view animation
-        imgLogo = findViewById(R.id.imgLogo);
-        txtLoginTitle = findViewById(R.id.txtLoginTitle);
-        cardForm = findViewById(R.id.cardForm);
-        txtRegister = findViewById(R.id.txtRegister);
-        lottieBackground = findViewById(R.id.lottie_background);
+//        imgLogo = findViewById(R.id.imgLogo);
+//        txtLoginTitle = findViewById(R.id.txtLoginTitle);
+//        cardForm = findViewById(R.id.cardForm);
+//        txtRegister = findViewById(R.id.txtRegister);
+//        lottieBackground = findViewById(R.id.lottie_background);
 
 
 
@@ -80,15 +80,15 @@ public class LoginActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        Animation slideFromBottom = AnimationUtils.loadAnimation(this, R.anim.slide_from_bottom);
-        Animation slideFromBottomDelayed = AnimationUtils.loadAnimation(this, R.anim.slide_from_bottom_delayed);
-
-        imgLogo.startAnimation(slideFromBottom);
-        txtLoginTitle.startAnimation(slideFromBottomDelayed);
-        cardForm.startAnimation(slideFromBottom);
-        txtRegister.startAnimation(slideFromBottomDelayed);
-        btnLogin.startAnimation(slideFromBottom);
-        lottieBackground.startAnimation(slideFromBottom);
+//        Animation slideFromBottom = AnimationUtils.loadAnimation(this, R.anim.slide_from_bottom);
+//        Animation slideFromBottomDelayed = AnimationUtils.loadAnimation(this, R.anim.slide_from_bottom_delayed);
+//
+//        imgLogo.startAnimation(slideFromBottom);
+//        txtLoginTitle.startAnimation(slideFromBottomDelayed);
+//        cardForm.startAnimation(slideFromBottom);
+//        txtRegister.startAnimation(slideFromBottomDelayed);
+//        btnLogin.startAnimation(slideFromBottom);
+//        lottieBackground.startAnimation(slideFromBottom);
     }
 
 

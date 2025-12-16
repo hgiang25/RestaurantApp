@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- NỀN XANH (PHÍA TRÊN) -->
+    <item>
+        <shape>
+            <gradient
+		android:gradientRadius="150%"
+                android:startColor="#4B0082"
+                android:centerColor="#00BFFF"
+                android:endColor="#00008B"
+		android:centerX="50%" 
+		android:centerY="50%"/>
+        </shape>
+    </item>
+
+    <!-- NỀN TRẮNG (PHÍA DƯỚI) -->
+    <item
+        android:top="275dp">   <!-- CHỈNH CAO THẤP Ở ĐÂY -->
+        <shape>
+            <solid android:color="#FFFFFF"/>
+        </shape>
+    </item>
+
+</layer-list>

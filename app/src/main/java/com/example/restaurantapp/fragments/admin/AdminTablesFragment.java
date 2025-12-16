@@ -20,6 +20,7 @@ import com.example.restaurantapp.adapters.TableAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.TableModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
@@ -44,7 +45,8 @@ public class AdminTablesFragment extends Fragment {
         adapter = new TableAdapter(tableList, this::showEditTableDialog);
         recyclerView.setAdapter(adapter);
 
-        FloatingActionButton fabAdd = view.findViewById(R.id.fabAddTable);
+        ExtendedFloatingActionButton fabAdd = view.findViewById(R.id.fabAddTable);
+
         fabAdd.setOnClickListener(v -> showAddTableDialog());
 
         loadTables();

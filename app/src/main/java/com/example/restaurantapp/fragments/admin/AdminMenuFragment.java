@@ -22,6 +22,7 @@ import com.example.restaurantapp.adapters.AdminMenuAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.MenuItem;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public class AdminMenuFragment extends Fragment {
         adapter = new AdminMenuAdapter(menuList, this::showEditMenuDialog);
         recyclerView.setAdapter(adapter);
 
-        FloatingActionButton fabAdd = view.findViewById(R.id.fabAddMenu);
+        ExtendedFloatingActionButton fabAdd = view.findViewById(R.id.fabAddMenu);
         fabAdd.setOnClickListener(v -> showAddMenuDialog());
 
         loadMenu();
