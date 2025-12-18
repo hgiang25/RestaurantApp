@@ -19,7 +19,7 @@ import com.example.restaurantapp.R;
 import com.example.restaurantapp.adapters.TableAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.TableModel;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class AdminTablesFragment extends Fragment {
         adapter = new TableAdapter(tableList, this::showEditTableDialog);
         recyclerView.setAdapter(adapter);
 
-        FloatingActionButton fabAdd = view.findViewById(R.id.fabAddTable);
+        ExtendedFloatingActionButton fabAdd = view.findViewById(R.id.fabAddTable);
         fabAdd.setOnClickListener(v -> showAddTableDialog());
 
         loadTables();
@@ -107,11 +107,15 @@ public class AdminTablesFragment extends Fragment {
     }
 
     private void showEditTableDialog(TableModel table) {
+        if (getContext() == null || !isAdded()) return;
+        
         String[] options = {"Đổi trạng thái", "Sửa thông tin", "Hủy"};
 
         new AlertDialog.Builder(getContext())
                 .setTitle(table.getName())
                 .setItems(options, (dialog, which) -> {
+                    if (getContext() == null || !isAdded()) return;
+                    
                     if (which == 0) {
                         // Đổi trạng thái
                         String newStatus = "free".equals(table.getStatus()) ? "occupied" : "free";
@@ -119,7 +123,11 @@ public class AdminTablesFragment extends Fragment {
                         updates.put("status", newStatus);
                         FirebaseService.getInstance().updateTable(table.getId(), updates,
                                 unused -> {},
-                                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                                e -> {
+                                    if (getContext() != null && isAdded()) {
+                                        Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                     } else if (which == 1) {
                         // Sửa thông tin
                         showEditInfoDialog(table);
@@ -129,6 +137,8 @@ public class AdminTablesFragment extends Fragment {
     }
 
     private void showEditInfoDialog(TableModel table) {
+        if (getContext() == null || !isAdded()) return;
+        
         LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 10);

@@ -21,7 +21,7 @@ import com.example.restaurantapp.R;
 import com.example.restaurantapp.adapters.AdminMenuAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.MenuItem;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ public class AdminMenuFragment extends Fragment {
         adapter = new AdminMenuAdapter(menuList, this::showEditMenuDialog);
         recyclerView.setAdapter(adapter);
 
-        FloatingActionButton fabAdd = view.findViewById(R.id.fabAddMenu);
+        ExtendedFloatingActionButton fabAdd = view.findViewById(R.id.fabAddMenu);
         fabAdd.setOnClickListener(v -> showAddMenuDialog());
 
         loadMenu();
@@ -118,11 +118,15 @@ public class AdminMenuFragment extends Fragment {
     }
 
     private void showEditMenuDialog(MenuItem item) {
+        if (getContext() == null || !isAdded()) return;
+        
         String[] options = {"Sửa thông tin", item.isAvailable() ? "Tạm hết món" : "Có sẵn", "Hủy"};
 
         new AlertDialog.Builder(getContext())
                 .setTitle(item.getName())
                 .setItems(options, (dialog, which) -> {
+                    if (getContext() == null || !isAdded()) return;
+                    
                     if (which == 0) {
                         showEditInfoDialog(item);
                     } else if (which == 1) {
@@ -131,13 +135,19 @@ public class AdminMenuFragment extends Fragment {
                         updates.put("available", !item.isAvailable());
                         FirebaseService.getInstance().updateMenuItem(item.getId(), updates,
                                 unused -> {},
-                                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                                e -> {
+                                    if (getContext() != null && isAdded()) {
+                                        Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                     }
                 })
                 .show();
     }
 
     private void showEditInfoDialog(MenuItem item) {
+        if (getContext() == null || !isAdded()) return;
+        
         LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 10);

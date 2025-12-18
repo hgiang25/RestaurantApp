@@ -7,13 +7,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.ImageView;
-import androidx.cardview.widget.CardView;
-import com.airbnb.lottie.LottieAnimationView;
-
-
 
 import com.example.restaurantapp.AdminActivity;
 import com.example.restaurantapp.CustomerActivity;
@@ -30,12 +23,6 @@ public class LoginActivity extends AppCompatActivity {
     MaterialButton btnLogin;
     TextView txtRegister;
 
-    ImageView imgLogo;
-    TextView txtLoginTitle;
-    CardView cardForm;
-    LottieAnimationView lottieBackground; // hoặc View nếu bạn dùng View
-
-
     ProgressDialog dialog;
     FirebaseService api;
 
@@ -49,16 +36,6 @@ public class LoginActivity extends AppCompatActivity {
         edtPassword = findViewById(R.id.edtPassword);
         btnLogin = findViewById(R.id.btnLogin);
         txtRegister = findViewById(R.id.txtRegister);
-
-        // Ánh xạ view animation
-        imgLogo = findViewById(R.id.imgLogo);
-        txtLoginTitle = findViewById(R.id.txtLoginTitle);
-        cardForm = findViewById(R.id.cardForm);
-        txtRegister = findViewById(R.id.txtRegister);
-        lottieBackground = findViewById(R.id.lottie_background);
-
-
-
 
         dialog = new ProgressDialog(this);
         dialog.setMessage("Đang đăng nhập...");
@@ -74,21 +51,6 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(intent, ActivityOptions.makeCustomAnimation(this,
                     R.anim.slide_in_right, R.anim.slide_out_left).toBundle());
         });
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        Animation slideFromBottom = AnimationUtils.loadAnimation(this, R.anim.slide_from_bottom);
-        Animation slideFromBottomDelayed = AnimationUtils.loadAnimation(this, R.anim.slide_from_bottom_delayed);
-
-        imgLogo.startAnimation(slideFromBottom);
-        txtLoginTitle.startAnimation(slideFromBottomDelayed);
-        cardForm.startAnimation(slideFromBottom);
-        txtRegister.startAnimation(slideFromBottomDelayed);
-        btnLogin.startAnimation(slideFromBottom);
-        lottieBackground.startAnimation(slideFromBottom);
     }
 
 

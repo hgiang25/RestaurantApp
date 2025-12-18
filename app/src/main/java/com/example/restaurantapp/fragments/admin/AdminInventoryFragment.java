@@ -113,6 +113,8 @@ public class AdminInventoryFragment extends Fragment {
     }
 
     private void showInventoryDetail(InventoryModel item) {
+        if (getContext() == null || !isAdded()) return;
+        
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_inventory, null);
 
         EditText edtName = dialogView.findViewById(R.id.edtItemName);

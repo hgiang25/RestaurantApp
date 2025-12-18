@@ -49,7 +49,8 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.View
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvCode, tvDiscount, tvExpiry, tvStatus;
+        TextView tvName, tvCode, tvDiscount, tvExpiry, tvStatus, tvMaxDiscount, tvMinOrder;
+        View viewStatusBar;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -58,20 +59,51 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.View
             tvDiscount = itemView.findViewById(R.id.tvDiscount);
             tvExpiry = itemView.findViewById(R.id.tvExpiry);
             tvStatus = itemView.findViewById(R.id.tvStatus);
+            tvMaxDiscount = itemView.findViewById(R.id.tvMaxDiscount);
+            tvMinOrder = itemView.findViewById(R.id.tvMinOrder);
+            viewStatusBar = itemView.findViewById(R.id.viewStatusBar);
         }
 
         void bind(PromotionModel promotion) {
             tvName.setText(promotion.getName());
             tvCode.setText(promotion.getCode());
-            tvDiscount.setText(String.format("Giảm %.0f%%", promotion.getDiscountPercent()));
+            tvDiscount.setText(String.format(Locale.getDefault(), "-%.0f%%", promotion.getDiscountPercent()));
 
             if (promotion.getValidUntil() != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                tvExpiry.setText("HSD: " + sdf.format(promotion.getValidUntil().toDate()));
+                tvExpiry.setText(sdf.format(promotion.getValidUntil().toDate()));
+            } else {
+                tvExpiry.setText("Không giới hạn");
             }
 
-            tvStatus.setText(promotion.isActive() ? "Đang hoạt động" : "Đã hết hạn");
-            tvStatus.setTextColor(promotion.isActive() ? 0xFF4CAF50 : 0xFFF44336);
+            // Max discount
+            if (tvMaxDiscount != null) {
+                if (promotion.getMaxDiscount() > 0) {
+                    tvMaxDiscount.setText(String.format(Locale.getDefault(), "%,.0fđ", promotion.getMaxDiscount()));
+                } else {
+                    tvMaxDiscount.setText("Không giới hạn");
+                }
+            }
+
+            // Min order
+            if (tvMinOrder != null) {
+                if (promotion.getMinOrderAmount() > 0) {
+                    tvMinOrder.setText(String.format(Locale.getDefault(), "%,.0fđ", promotion.getMinOrderAmount()));
+                } else {
+                    tvMinOrder.setText("Không yêu cầu");
+                }
+            }
+
+            // Status styling
+            boolean isActive = promotion.isActive();
+            tvStatus.setText(isActive ? "✓ Đang hoạt động" : "✗ Đã tắt");
+            tvStatus.setTextColor(isActive ? 0xFF4CAF50 : 0xFFF44336);
+            tvStatus.setBackgroundColor(isActive ? 0x1A4CAF50 : 0x1AF44336);
+
+            // Status bar color
+            if (viewStatusBar != null) {
+                viewStatusBar.setBackgroundColor(isActive ? 0xFF4CAF50 : 0xFFF44336);
+            }
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) {

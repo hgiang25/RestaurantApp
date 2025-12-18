@@ -17,7 +17,7 @@ import com.example.restaurantapp.adapters.StaffAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.authentication.RegisterStaffActivity;
 import com.example.restaurantapp.models.User;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class AdminStaffFragment extends Fragment {
         adapter = new StaffAdapter(staffList, this::onStaffClick);
         recyclerView.setAdapter(adapter);
 
-        FloatingActionButton fabAdd = view.findViewById(R.id.fabAddStaff);
+        ExtendedFloatingActionButton fabAdd = view.findViewById(R.id.fabAddStaff);
         fabAdd.setOnClickListener(v -> {
             startActivity(new Intent(getActivity(), RegisterStaffActivity.class));
         });
