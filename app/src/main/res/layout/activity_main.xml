@@ -9,11 +9,11 @@
     tools:context=".MainActivity">
 
     <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="212dp"
+        android:layout_height="360dp"
         android:layout_gravity="center"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:gravity="center"
+        android:orientation="vertical">
 
         <!-- App Logo -->
         <com.google.android.material.card.MaterialCardView
@@ -28,7 +28,7 @@
                 android:layout_height="match_parent"
                 android:padding="24dp"
                 android:src="@drawable/ic_restaurant"
-                app:tint="@color/primary"/>
+                app:tint="@color/primary" />
 
         </com.google.android.material.card.MaterialCardView>
 
@@ -36,30 +36,22 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Restaurant"
-            android:textSize="36sp"
-            android:textStyle="bold"
-            android:textColor="@color/white"
+            android:layout_marginTop="24dp"
             android:fontFamily="sans-serif-medium"
-            android:layout_marginTop="24dp"/>
+            android:text="Restaurant"
+            android:textColor="@color/white"
+            android:textSize="36sp"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:text="Quản lý nhà hàng thông minh"
-            android:textSize="14sp"
             android:textColor="#B8FFFFFF"
-            android:layout_marginTop="8dp"/>
+            android:textSize="14sp" />
 
         <!-- Loading -->
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="48dp"
-            android:indeterminate="true"
-            app:indicatorColor="@color/white"
-            app:trackColor="#33FFFFFF"
-            app:indicatorSize="40dp"/>
 
     </LinearLayout>
 

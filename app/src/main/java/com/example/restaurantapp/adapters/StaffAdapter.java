@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.restaurantapp.R;
 import com.example.restaurantapp.models.User;
+import com.google.android.material.chip.Chip;
 
 import java.util.List;
 
@@ -47,19 +48,20 @@ public class StaffAdapter extends RecyclerView.Adapter<StaffAdapter.StaffViewHol
     }
 
     class StaffViewHolder extends RecyclerView.ViewHolder {
-        TextView txtName, txtEmail, txtRole;
+        TextView txtName, txtEmail;
+        Chip chipRole;
 
         StaffViewHolder(@NonNull View itemView) {
             super(itemView);
             txtName = itemView.findViewById(R.id.txtStaffName);
             txtEmail = itemView.findViewById(R.id.txtStaffEmail);
-            txtRole = itemView.findViewById(R.id.txtStaffRole);
+            chipRole = itemView.findViewById(R.id.txtStaffRole);
         }
 
         void bind(User staff) {
             txtName.setText(staff.getUsername());
             txtEmail.setText(staff.getEmail());
-            txtRole.setText(staff.getRole());
+            chipRole.setText(staff.getRole());
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) {

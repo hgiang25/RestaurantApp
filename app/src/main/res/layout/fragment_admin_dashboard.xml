@@ -367,24 +367,24 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
                             android:gravity="center"
-                            android:padding="16dp"
-                            android:background="?attr/selectableItemBackground">
+                            android:orientation="vertical"
+                            android:padding="16dp">
 
                             <ImageView
                                 android:layout_width="32dp"
                                 android:layout_height="32dp"
                                 android:src="@drawable/ic_table"
-                                app:tint="@color/primary"/>
+                                app:tint="@color/primary" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
                                 android:text="Thêm bàn"
-                                android:textSize="12sp"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="8dp"/>
+                                android:textSize="12sp" />
 
                         </LinearLayout>
 
@@ -394,24 +394,25 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
                             android:gravity="center"
-                            android:padding="16dp"
-                            android:background="?attr/selectableItemBackground">
+                            android:orientation="vertical"
+                            android:padding="16dp">
 
                             <ImageView
                                 android:layout_width="32dp"
                                 android:layout_height="32dp"
                                 android:src="@drawable/ic_menu_food"
-                                app:tint="@color/secondary"/>
+                                app:tint="@color/secondary" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
                                 android:text="Thêm món"
-                                android:textSize="12sp"
+                                android:textAlignment="center"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="8dp"/>
+                                android:textSize="12sp" />
 
                         </LinearLayout>
 
@@ -421,24 +422,24 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
                             android:gravity="center"
-                            android:padding="16dp"
-                            android:background="?attr/selectableItemBackground">
+                            android:orientation="vertical"
+                            android:padding="16dp">
 
                             <ImageView
                                 android:layout_width="32dp"
                                 android:layout_height="32dp"
                                 android:src="@drawable/ic_staff"
-                                app:tint="@color/accent"/>
+                                app:tint="@color/accent" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
                                 android:text="Thêm NV"
-                                android:textSize="12sp"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="8dp"/>
+                                android:textSize="12sp" />
 
                         </LinearLayout>
 
@@ -448,24 +449,24 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
                             android:gravity="center"
-                            android:padding="16dp"
-                            android:background="?attr/selectableItemBackground">
+                            android:orientation="vertical"
+                            android:padding="16dp">
 
                             <ImageView
                                 android:layout_width="32dp"
                                 android:layout_height="32dp"
                                 android:src="@drawable/ic_dashboard"
-                                app:tint="@color/status_preparing"/>
+                                app:tint="@color/status_preparing" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
                                 android:text="Báo cáo"
-                                android:textSize="12sp"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="8dp"/>
+                                android:textSize="12sp" />
 
                         </LinearLayout>
 

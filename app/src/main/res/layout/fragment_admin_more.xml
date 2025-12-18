@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F5F5">
@@ -12,7 +13,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Thêm"
+            android:text="Quản lý nâng cao"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#1A2B4C"
@@ -25,6 +26,16 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Section: Quản lý -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📦 Quản lý"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#666666"
+                android:layout_marginBottom="8dp"/>
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnInventory"
                 android:layout_width="match_parent"
@@ -34,46 +45,107 @@
                 android:textColor="#1A2B4C"
                 android:backgroundTint="@color/white"
                 android:layout_marginBottom="8dp"
+                app:icon="@drawable/ic_arrow_right"
+                app:iconGravity="end"
+                app:iconTint="#CCCCCC"
                 style="@style/Widget.Material3.Button.ElevatedButton"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPromotions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🎁 Khuyến mãi"
+                android:text="🎁 Khuyến mãi &amp; Voucher"
                 android:textAlignment="textStart"
                 android:textColor="#1A2B4C"
                 android:backgroundTint="@color/white"
                 android:layout_marginBottom="8dp"
+                app:icon="@drawable/ic_arrow_right"
+                app:iconGravity="end"
+                app:iconTint="#CCCCCC"
                 style="@style/Widget.Material3.Button.ElevatedButton"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnReports"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="📊 Báo cáo"
+                android:text="📊 Báo cáo &amp; Thống kê"
+                android:textAlignment="textStart"
+                android:textColor="#1A2B4C"
+                android:backgroundTint="@color/white"
+                android:layout_marginBottom="16dp"
+                app:icon="@drawable/ic_arrow_right"
+                app:iconGravity="end"
+                app:iconTint="#CCCCCC"
+                style="@style/Widget.Material3.Button.ElevatedButton"/>
+
+            <!-- Section: Khách hàng -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="👥 Khách hàng"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#666666"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLoyalty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="💎 Quản lý điểm thưởng"
                 android:textAlignment="textStart"
                 android:textColor="#1A2B4C"
                 android:backgroundTint="@color/white"
                 android:layout_marginBottom="8dp"
+                app:icon="@drawable/ic_arrow_right"
+                app:iconGravity="end"
+                app:iconTint="#CCCCCC"
                 style="@style/Widget.Material3.Button.ElevatedButton"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnNotifications"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🔔 Gửi thông báo"
+                android:text="🔔 Gửi thông báo hàng loạt"
+                android:textAlignment="textStart"
+                android:textColor="#1A2B4C"
+                android:backgroundTint="@color/white"
+                android:layout_marginBottom="16dp"
+                app:icon="@drawable/ic_arrow_right"
+                app:iconGravity="end"
+                app:iconTint="#CCCCCC"
+                style="@style/Widget.Material3.Button.ElevatedButton"/>
+
+            <!-- Section: Hệ thống -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚙️ Hệ thống"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#666666"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAuditLogs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📋 Lịch sử hoạt động"
                 android:textAlignment="textStart"
                 android:textColor="#1A2B4C"
                 android:backgroundTint="@color/white"
                 android:layout_marginBottom="24dp"
+                app:icon="@drawable/ic_arrow_right"
+                app:iconGravity="end"
+                app:iconTint="#CCCCCC"
                 style="@style/Widget.Material3.Button.ElevatedButton"/>
 
+            <!-- Logout -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Đăng xuất"
+                android:text="🚪 Đăng xuất"
                 android:textColor="@color/white"
                 android:backgroundTint="#F44336"/>
 
