@@ -17,6 +17,7 @@ import com.example.restaurantapp.adapters.NotificationAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.NotificationModel;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public class CustomerNotificationsFragment extends Fragment {
     private TextView txtEmpty;
     private NotificationAdapter adapter;
     private List<NotificationModel> notificationList = new ArrayList<>();
+    private ListenerRegistration notificationListener;
 
     @Nullable
     @Override
@@ -41,10 +43,42 @@ public class CustomerNotificationsFragment extends Fragment {
         adapter = new NotificationAdapter(notificationList);
         recyclerView.setAdapter(adapter);
 
-        loadNotifications();
+        //loadNotifications();
+
 
         return view;
     }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        String userId = FirebaseService.getInstance().getCurrentUserId();
+        String role = "customer";
+
+        notificationListener = FirebaseService.getInstance()
+                .listenNotificationsForUser(userId, role, mergedList -> {
+
+                    if (!isAdded()) return;
+
+                    notificationList.clear();
+                    notificationList.addAll(mergedList);
+
+                    txtEmpty.setVisibility(notificationList.isEmpty() ? View.VISIBLE : View.GONE);
+                    recyclerView.setVisibility(notificationList.isEmpty() ? View.GONE : View.VISIBLE);
+                    adapter.notifyDataSetChanged();
+                });
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (notificationListener != null) {
+            notificationListener.remove();
+            notificationListener = null;
+        }
+    }
+
 
     private void loadNotifications() {
         String userId = FirebaseService.getInstance().getCurrentUserId();

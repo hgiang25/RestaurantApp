@@ -2,6 +2,7 @@ package com.example.restaurantapp.api;
 
 import androidx.annotation.NonNull;
 
+import com.example.restaurantapp.models.NotificationModel;
 import com.example.restaurantapp.models.User;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -9,6 +10,8 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +32,10 @@ public class FirebaseService {
         db = FirebaseFirestore.getInstance();
     }
 
-    public FirebaseFirestore getDb() { return db; }
+    public FirebaseFirestore getDb() {
+        return db;
+    }
+
     public String getCurrentUserId() {
         return auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
     }
@@ -206,34 +212,93 @@ public class FirebaseService {
     }
 
 
-    public ListenerRegistration listenPersonalNotifications(
+    /** =================== NOTIFICATIONS (REALTIME) =================== */
+    public ListenerRegistration listenNotificationsForUser(
             String userId,
-            EventListener<QuerySnapshot> listener) {
-
-        return db.collection("notifications")
-                .whereEqualTo("type", "personal")
-                .whereEqualTo("targetUserId", userId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .addSnapshotListener(listener);
-    }
-
-    public ListenerRegistration listenBroadcastNotifications(
             String role,
-            EventListener<QuerySnapshot> listener) {
+            java.util.function.Consumer<List<NotificationModel>> onUpdate
+    ) {
 
-        return db.collection("notifications")
-                .whereEqualTo("type", "broadcast")
-                .whereArrayContains("roles", role)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .addSnapshotListener(listener);
+        List<NotificationModel> personalList = new ArrayList<>();
+        List<NotificationModel> broadcastList = new ArrayList<>();
+
+        // 📩 Personal notifications
+        ListenerRegistration personalListener =
+                db.collection("notifications")
+                        .whereEqualTo("type", "personal")
+                        .whereEqualTo("targetUserId", userId)
+                        .orderBy("createdAt", Query.Direction.DESCENDING)
+                        .addSnapshotListener((value, error) -> {
+                            if (error != null || value == null) return;
+
+                            personalList.clear();
+                            for (DocumentSnapshot doc : value.getDocuments()) {
+                                NotificationModel n = doc.toObject(NotificationModel.class);
+                                if (n != null) {
+                                    n.setId(doc.getId());
+                                    personalList.add(n);
+                                }
+                            }
+
+                            onUpdate.accept(mergeAndSort(personalList, broadcastList));
+                        });
+
+        // 📢 Broadcast notifications
+        ListenerRegistration broadcastListener =
+                db.collection("notifications")
+                        .whereEqualTo("type", "broadcast")
+                        .whereArrayContains("roles", role)
+                        .orderBy("createdAt", Query.Direction.DESCENDING)
+                        .addSnapshotListener((value, error) -> {
+                            if (error != null || value == null) return;
+
+                            broadcastList.clear();
+                            for (DocumentSnapshot doc : value.getDocuments()) {
+                                NotificationModel n = doc.toObject(NotificationModel.class);
+                                if (n != null) {
+                                    n.setId(doc.getId());
+                                    broadcastList.add(n);
+                                }
+                            }
+
+                            onUpdate.accept(mergeAndSort(personalList, broadcastList));
+                        });
+
+        return () -> {
+            personalListener.remove();
+            broadcastListener.remove();
+        };
+    }
+
+    private List<NotificationModel> mergeAndSort(
+            List<NotificationModel> personal,
+            List<NotificationModel> broadcast
+    ) {
+        List<NotificationModel> merged = new ArrayList<>();
+        merged.addAll(personal);
+        merged.addAll(broadcast);
+
+        Collections.sort(merged, (a, b) ->
+                b.getCreatedAt().compareTo(a.getCreatedAt()));
+
+        return merged;
     }
 
 
-    public void listenNotificationsRealtime(String userId, EventListener<QuerySnapshot> listener) {
-        db.collection("notifications")
-                .whereEqualTo("userId", userId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .addSnapshotListener(listener);
+    // 2️⃣ Broadcast notification to roles
+    public void broadcastNotification(String message, List<String> roles,
+                                      OnSuccessListener<Void> success,
+                                      OnFailureListener fail) {
+
+        Map<String, Object> notif = new HashMap<>();
+        notif.put("type", "broadcast");
+        notif.put("roles", roles);
+        notif.put("message", message);
+        notif.put("createdAt", Timestamp.now());
+
+        db.collection("notifications").add(notif)
+                .addOnSuccessListener(r -> success.onSuccess(null))
+                .addOnFailureListener(fail);
     }
 
     /** =================== INVENTORY / STOCK =================== */
@@ -345,22 +410,6 @@ public class FirebaseService {
         }
 
         batch.commit().addOnSuccessListener(success).addOnFailureListener(fail);
-    }
-
-    // 2️⃣ Broadcast notification to roles
-    public void broadcastNotification(String message, List<String> roles,
-                                      OnSuccessListener<Void> success,
-                                      OnFailureListener fail) {
-
-        Map<String, Object> notif = new HashMap<>();
-        notif.put("type", "broadcast");
-        notif.put("roles", roles);
-        notif.put("message", message);
-        notif.put("createdAt", Timestamp.now());
-
-        db.collection("notifications").add(notif)
-                .addOnSuccessListener(r -> success.onSuccess(null))
-                .addOnFailureListener(fail);
     }
 
 
