@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -15,6 +16,8 @@ import com.example.restaurantapp.fragments.admin.AdminMenuFragment;
 import com.example.restaurantapp.fragments.admin.AdminMoreFragment;
 import com.example.restaurantapp.fragments.admin.AdminStaffFragment;
 import com.example.restaurantapp.fragments.admin.AdminTablesFragment;
+import com.example.restaurantapp.utils.LocaleHelper;
+import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
@@ -23,7 +26,15 @@ public class AdminActivity extends AppCompatActivity {
     BottomNavigationView bottomNav;
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        PreferenceManager prefs = new PreferenceManager(this);
+        prefs.applySavedSettings();
+        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin);
 

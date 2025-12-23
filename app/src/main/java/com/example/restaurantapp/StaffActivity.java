@@ -1,5 +1,6 @@
 package com.example.restaurantapp;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -14,6 +15,8 @@ import com.example.restaurantapp.fragments.staff.StaffNotificationsFragment;
 import com.example.restaurantapp.fragments.staff.StaffOrdersFragment;
 import com.example.restaurantapp.fragments.staff.StaffTablesFragment;
 import com.example.restaurantapp.fragments.staff.StaffTimesheetFragment;
+import com.example.restaurantapp.utils.LocaleHelper;
+import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
@@ -22,7 +25,15 @@ public class StaffActivity extends AppCompatActivity {
     BottomNavigationView bottomNav;
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        PreferenceManager prefs = new PreferenceManager(this);
+        prefs.applySavedSettings();
+        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_staff);
 

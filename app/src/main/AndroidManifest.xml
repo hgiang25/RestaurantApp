@@ -37,6 +37,11 @@
         <activity android:name=".AdminActivity"/>
         <activity android:name=".StaffActivity"/>
         <activity android:name=".CustomerActivity"/>
+        
+        <!-- Other Activities -->
+        <activity 
+            android:name=".activities.OrderHistoryActivity"
+            android:exported="false" />
 
     </application>
 

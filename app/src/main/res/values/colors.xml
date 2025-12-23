@@ -40,6 +40,7 @@
     <!-- Text Colors -->
     <color name="text_primary">#1A1F36</color>
     <color name="text_secondary">#8E94A8</color>
+    <color name="text_secondary_dark">#B0B0B0</color>
     <color name="text_hint">#B8BCC8</color>
     <color name="text_on_primary">#FFFFFF</color>
     <color name="text_on_secondary">#FFFFFF</color>
@@ -65,6 +66,10 @@
     <color name="status_paid_bg">#E0F2F1</color>
     <color name="status_cancelled">#EF5350</color>
     <color name="status_cancelled_bg">#FFEBEE</color>
+    <color name="status_ready">#26A69A</color>
+    <color name="status_ready_bg">#E0F2F1</color>
+    <color name="status_completed">#4CAF50</color>
+    <color name="status_completed_bg">#E8F5E9</color>
 
     <!-- UI Elements -->
     <color name="divider">#E8EAF0</color>

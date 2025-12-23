@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Override colors for dark theme -->
+    <color name="background">#121212</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="card_background">#2D2D2D</color>
+    <color name="card_background_alt">#252525</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0B0</color>
+    <color name="text_hint">#757575</color>
+    
+    <!-- UI Elements -->
+    <color name="divider">#3D3D3D</color>
+    <color name="border">#404040</color>
+    
+    <!-- Input Colors -->
+    <color name="input_background">#2D2D2D</color>
+    <color name="input_stroke">#404040</color>
+</resources>

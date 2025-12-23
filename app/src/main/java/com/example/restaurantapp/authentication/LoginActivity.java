@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.ActivityOptions;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -20,6 +21,8 @@ import com.example.restaurantapp.CustomerActivity;
 import com.example.restaurantapp.R;
 import com.example.restaurantapp.StaffActivity;
 import com.example.restaurantapp.api.FirebaseService;
+import com.example.restaurantapp.utils.LocaleHelper;
+import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -40,7 +43,16 @@ public class LoginActivity extends AppCompatActivity {
     FirebaseService api;
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply saved settings
+        PreferenceManager prefs = new PreferenceManager(this);
+        prefs.applySavedSettings();
+        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
