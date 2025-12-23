@@ -54,6 +54,10 @@ public class CustomerMenuFragment extends Fragment {
     
     // Tables for dine-in
     private List<TableModel> tableList = new ArrayList<>();
+    
+    // Listener registration để remove khi destroy
+    private com.google.firebase.firestore.ListenerRegistration menuListener;
+    private com.google.firebase.firestore.ListenerRegistration tablesListener;
 
     @Nullable
     @Override
@@ -75,8 +79,13 @@ public class CustomerMenuFragment extends Fragment {
     }
 
     private void loadMenu() {
-        FirebaseService.getInstance().listenMenuRealtime((value, error) -> {
-            if (error != null || value == null) return;
+        // Remove old listener first
+        if (menuListener != null) {
+            menuListener.remove();
+        }
+        
+        menuListener = FirebaseService.getInstance().listenMenuRealtime((value, error) -> {
+            if (error != null || value == null || !isAdded()) return;
 
             menuList.clear();
             List<String> categories = new ArrayList<>();
@@ -363,8 +372,13 @@ public class CustomerMenuFragment extends Fragment {
     }
     
     private void loadTablesForSpinner(Spinner spinnerTables) {
-        FirebaseService.getInstance().listenFreeTables((value, error) -> {
-            if (error != null || value == null) return;
+        // Remove old listener first
+        if (tablesListener != null) {
+            tablesListener.remove();
+        }
+        
+        tablesListener = FirebaseService.getInstance().listenFreeTables((value, error) -> {
+            if (error != null || value == null || !isAdded()) return;
             
             tableList.clear();
             List<String> tableNames = new ArrayList<>();
@@ -480,5 +494,19 @@ public class CustomerMenuFragment extends Fragment {
                     appliedVoucher = null;
                 },
                 e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+    
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Remove listeners để tránh memory leak và lag
+        if (menuListener != null) {
+            menuListener.remove();
+            menuListener = null;
+        }
+        if (tablesListener != null) {
+            tablesListener.remove();
+            tablesListener = null;
+        }
     }
 }

@@ -41,6 +41,8 @@ public class AdminMoreFragment extends Fragment {
         MaterialButton btnInventory = view.findViewById(R.id.btnInventory);
         MaterialButton btnPromotions = view.findViewById(R.id.btnPromotions);
         MaterialButton btnReports = view.findViewById(R.id.btnReports);
+        MaterialButton btnReservations = view.findViewById(R.id.btnReservations);
+        MaterialButton btnOrders = view.findViewById(R.id.btnOrders);
         MaterialButton btnNotifications = view.findViewById(R.id.btnNotifications);
         MaterialButton btnLoyalty = view.findViewById(R.id.btnLoyalty);
         MaterialButton btnAuditLogs = view.findViewById(R.id.btnAuditLogs);
@@ -49,6 +51,8 @@ public class AdminMoreFragment extends Fragment {
         btnInventory.setOnClickListener(v -> navigateToFragment(new AdminInventoryFragment()));
         btnPromotions.setOnClickListener(v -> navigateToFragment(new AdminPromotionsFragment()));
         btnReports.setOnClickListener(v -> navigateToFragment(new AdminReportsFragment()));
+        btnReservations.setOnClickListener(v -> navigateToFragment(new AdminReservationsFragment()));
+        btnOrders.setOnClickListener(v -> navigateToFragment(new AdminOrdersFragment()));
         btnNotifications.setOnClickListener(v -> showNotificationDialog());
         btnLoyalty.setOnClickListener(v -> showLoyaltyManagementDialog());
         btnAuditLogs.setOnClickListener(v -> showAuditLogsDialog());

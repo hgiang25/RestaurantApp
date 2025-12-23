@@ -1,4 +1,4 @@
-package com.example.restaurantapp.fragments.staff;
+package com.example.restaurantapp.fragments.admin;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
@@ -21,24 +21,28 @@ import com.example.restaurantapp.adapters.StaffOrderAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.OrderModel;
 import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.OnOrderActionListener {
+public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.OnOrderActionListener {
 
     private RecyclerView recyclerView;
     private LinearLayout emptyState;
-    private TextView tvEmptyMessage;
+    private TextView tvEmptyMessage, tvTotalRevenue, tvOrderCount;
     private ProgressBar progressBar;
     
-    private Chip chipAll, chipPending, chipPreparing, chipServed;
+    private Chip chipAll, chipPending, chipPreparing, chipServed, chipPaid, chipCancelled;
     
     private StaffOrderAdapter adapter;
     private List<OrderModel> allOrders = new ArrayList<>();
@@ -50,7 +54,7 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_staff_orders, container, false);
+        View view = inflater.inflate(R.layout.fragment_admin_orders, container, false);
 
         initViews(view);
         setupChips();
@@ -65,35 +69,37 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
         emptyState = view.findViewById(R.id.emptyState);
         tvEmptyMessage = view.findViewById(R.id.tvEmptyMessage);
         progressBar = view.findViewById(R.id.progressBar);
+        tvTotalRevenue = view.findViewById(R.id.tvTotalRevenue);
+        tvOrderCount = view.findViewById(R.id.tvOrderCount);
         
         chipAll = view.findViewById(R.id.chipAll);
         chipPending = view.findViewById(R.id.chipPending);
         chipPreparing = view.findViewById(R.id.chipPreparing);
         chipServed = view.findViewById(R.id.chipServed);
+        chipPaid = view.findViewById(R.id.chipPaid);
+        chipCancelled = view.findViewById(R.id.chipCancelled);
         
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
     }
     
     private void setupChips() {
-        chipAll.setOnClickListener(v -> {
-            currentFilter = "all";
+        View.OnClickListener chipListener = v -> {
+            if (v == chipAll) currentFilter = "all";
+            else if (v == chipPending) currentFilter = "pending";
+            else if (v == chipPreparing) currentFilter = "preparing";
+            else if (v == chipServed) currentFilter = "served";
+            else if (v == chipPaid) currentFilter = "paid";
+            else if (v == chipCancelled) currentFilter = "cancelled";
+            
             filterOrders();
-        });
+        };
         
-        chipPending.setOnClickListener(v -> {
-            currentFilter = "pending";
-            filterOrders();
-        });
-        
-        chipPreparing.setOnClickListener(v -> {
-            currentFilter = "preparing";
-            filterOrders();
-        });
-        
-        chipServed.setOnClickListener(v -> {
-            currentFilter = "served";
-            filterOrders();
-        });
+        chipAll.setOnClickListener(chipListener);
+        chipPending.setOnClickListener(chipListener);
+        chipPreparing.setOnClickListener(chipListener);
+        chipServed.setOnClickListener(chipListener);
+        chipPaid.setOnClickListener(chipListener);
+        chipCancelled.setOnClickListener(chipListener);
     }
     
     private void setupAdapter() {
@@ -109,22 +115,55 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
             ordersListener.remove();
         }
         
-        ordersListener = FirebaseService.getInstance().listenOrdersRealtime((value, error) -> {
-            if (progressBar != null) progressBar.setVisibility(View.GONE);
-            
-            if (error != null || value == null || !isAdded()) return;
+        // Admin sees all orders
+        ordersListener = FirebaseService.getInstance().getDb()
+                .collection("orders")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener((value, error) -> {
+                    if (progressBar != null) progressBar.setVisibility(View.GONE);
+                    
+                    if (error != null || value == null || !isAdded()) return;
 
-            allOrders.clear();
-            for (DocumentSnapshot doc : value.getDocuments()) {
-                OrderModel order = doc.toObject(OrderModel.class);
-                if (order != null) {
-                    order.setId(doc.getId());
-                    allOrders.add(order);
+                    allOrders.clear();
+                    for (DocumentSnapshot doc : value.getDocuments()) {
+                        OrderModel order = doc.toObject(OrderModel.class);
+                        if (order != null) {
+                            order.setId(doc.getId());
+                            allOrders.add(order);
+                        }
+                    }
+                    
+                    updateStatistics();
+                    filterOrders();
+                });
+    }
+    
+    private void updateStatistics() {
+        // Calculate today's revenue
+        double todayRevenue = 0;
+        int todayOrders = 0;
+        
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        Date todayStart = calendar.getTime();
+        
+        for (OrderModel order : allOrders) {
+            if (order.getCreatedAt() != null && order.getCreatedAt().toDate().after(todayStart)) {
+                if ("paid".equals(order.getStatus()) && order.getTotal() != null) {
+                    todayRevenue += order.getTotal();
                 }
+                todayOrders++;
             }
-            
-            filterOrders();
-        });
+        }
+        
+        if (tvTotalRevenue != null) {
+            tvTotalRevenue.setText(String.format(Locale.getDefault(), "%,.0fđ", todayRevenue));
+        }
+        if (tvOrderCount != null) {
+            tvOrderCount.setText(String.valueOf(todayOrders));
+        }
     }
     
     private void filterOrders() {
@@ -134,22 +173,13 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
             String status = order.getStatus();
             
             if ("all".equals(currentFilter)) {
-                // Show all except paid and cancelled
-                if (!"paid".equals(status) && !"cancelled".equals(status)) {
-                    filteredOrders.add(order);
-                }
+                filteredOrders.add(order);
             } else if ("pending".equals(currentFilter)) {
                 if ("pending".equals(status) || "confirmed".equals(status)) {
                     filteredOrders.add(order);
                 }
-            } else if ("preparing".equals(currentFilter)) {
-                if ("preparing".equals(status)) {
-                    filteredOrders.add(order);
-                }
-            } else if ("served".equals(currentFilter)) {
-                if ("served".equals(status)) {
-                    filteredOrders.add(order);
-                }
+            } else if (currentFilter.equals(status)) {
+                filteredOrders.add(order);
             }
         }
         
@@ -241,7 +271,6 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
     }
     
     private void updateLoyaltyPoints(String customerId, Double total) {
-        // Tính điểm: 10,000đ = 1 điểm
         int pointsToAdd = (int) (total / 10000);
         if (pointsToAdd <= 0) return;
         
@@ -260,10 +289,8 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
     private void showOrderDetailsDialog(OrderModel order) {
         StringBuilder details = new StringBuilder();
         
-        // Order info
         details.append("📋 Đơn #").append(order.getId().substring(0, 8).toUpperCase()).append("\n\n");
         
-        // Order type
         if ("dine_in".equals(order.getOrderType())) {
             details.append("🪑 ").append(order.getTableName() != null ? order.getTableName() : "Ăn tại chỗ").append("\n");
         } else if ("takeaway".equals(order.getOrderType())) {
@@ -278,7 +305,6 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
         
         details.append("\n--- Món đặt ---\n");
         
-        // Items
         if (order.getItems() != null) {
             for (Object item : order.getItems()) {
                 if (item instanceof Map) {
@@ -300,7 +326,6 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
             }
         }
         
-        // Totals
         details.append("\n");
         if (order.getSubtotal() != null) {
             details.append("Tạm tính: ").append(String.format(Locale.getDefault(), "%,.0fđ", order.getSubtotal())).append("\n");
@@ -312,7 +337,6 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
             details.append("💰 Tổng cộng: ").append(String.format(Locale.getDefault(), "%,.0fđ", order.getTotal())).append("\n");
         }
         
-        // Time
         if (order.getCreatedAt() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault());
             details.append("\n🕐 ").append(sdf.format(order.getCreatedAt().toDate()));

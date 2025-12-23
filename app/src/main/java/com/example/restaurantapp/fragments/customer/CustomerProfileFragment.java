@@ -37,6 +37,8 @@ import com.google.firebase.storage.StorageReference;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 import java.util.HashMap;
+import com.google.firebase.firestore.ListenerRegistration;
+
 import java.util.Map;
 
 public class CustomerProfileFragment extends Fragment {
@@ -56,6 +58,9 @@ public class CustomerProfileFragment extends Fragment {
     // For avatar selection in dialog
     private CircleImageView dialogAvatarView;
     private Uri selectedAvatarUri = null;
+    
+    // Listener để remove khi destroy
+    private ListenerRegistration userListener;
     
     // Activity result launcher for image picker
     private ActivityResultLauncher<Intent> imagePickerLauncher;
@@ -123,8 +128,13 @@ public class CustomerProfileFragment extends Fragment {
         String userId = FirebaseService.getInstance().getCurrentUserId();
         if (userId == null) return;
 
-        FirebaseService.getInstance().listenUserRealtime(userId, (snapshot, error) -> {
-            if (error != null || snapshot == null) return;
+        // Remove old listener first
+        if (userListener != null) {
+            userListener.remove();
+        }
+
+        userListener = FirebaseService.getInstance().listenUserRealtimeWithReg(userId, (snapshot, error) -> {
+            if (error != null || snapshot == null || !isAdded()) return;
 
             String username = snapshot.getString("username");
             String email = snapshot.getString("email");
@@ -333,5 +343,14 @@ public class CustomerProfileFragment extends Fragment {
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+    }
+    
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (userListener != null) {
+            userListener.remove();
+            userListener = null;
+        }
     }
 }

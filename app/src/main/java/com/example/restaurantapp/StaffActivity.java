@@ -13,8 +13,8 @@ import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.authentication.LoginActivity;
 import com.example.restaurantapp.fragments.staff.StaffNotificationsFragment;
 import com.example.restaurantapp.fragments.staff.StaffOrdersFragment;
+import com.example.restaurantapp.fragments.staff.StaffReservationsFragment;
 import com.example.restaurantapp.fragments.staff.StaffTablesFragment;
-import com.example.restaurantapp.fragments.staff.StaffTimesheetFragment;
 import com.example.restaurantapp.utils.LocaleHelper;
 import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -52,10 +52,10 @@ public class StaffActivity extends AppCompatActivity {
 
                 if (itemId == R.id.nav_tables) {
                     fragment = new StaffTablesFragment();
+                } else if (itemId == R.id.nav_reservations) {
+                    fragment = new StaffReservationsFragment();
                 } else if (itemId == R.id.nav_orders) {
                     fragment = new StaffOrdersFragment();
-                } else if (itemId == R.id.nav_timesheet) {
-                    fragment = new StaffTimesheetFragment();
                 } else if (itemId == R.id.nav_notifications) {
                     fragment = new StaffNotificationsFragment();
                 } else if (itemId == R.id.nav_logout) {

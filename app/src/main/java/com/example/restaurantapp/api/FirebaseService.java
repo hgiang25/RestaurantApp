@@ -82,6 +82,10 @@ public class FirebaseService {
         db.collection("users").document(uid).addSnapshotListener(listener);
     }
 
+    public ListenerRegistration listenUserRealtimeWithReg(String uid, EventListener<DocumentSnapshot> listener) {
+        return db.collection("users").document(uid).addSnapshotListener(listener);
+    }
+
     public void updateUserRole(String uid, String role, OnSuccessListener<Void> success, OnFailureListener fail) {
         db.collection("users").document(uid).update("role", role)
                 .addOnSuccessListener(success)
@@ -141,12 +145,13 @@ public class FirebaseService {
     }
 
     /** Listen realtime danh sách bàn */
-    public void listenTablesRealtime(EventListener<QuerySnapshot> listener) {
+    public ListenerRegistration listenTablesRealtime(EventListener<QuerySnapshot> listener) {
         removeTableListener();
 
         tableListener = db.collection("tables")
                 .orderBy("createdAt", Query.Direction.ASCENDING)
                 .addSnapshotListener(listener);
+        return tableListener;
     }
 
     /** Remove listener */
@@ -183,8 +188,8 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
-    public void listenMenuRealtime(EventListener<QuerySnapshot> listener) {
-        db.collection("menu").addSnapshotListener(listener);
+    public ListenerRegistration listenMenuRealtime(EventListener<QuerySnapshot> listener) {
+        return db.collection("menu").addSnapshotListener(listener);
     }
 
     /** =================== ORDERS =================== */
@@ -209,13 +214,16 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
-    public void listenOrdersByCustomerRealtime(String customerId, EventListener<QuerySnapshot> listener) {
-        db.collection("orders").whereEqualTo("customerId", customerId)
+    public ListenerRegistration listenOrdersByCustomerRealtime(String customerId, EventListener<QuerySnapshot> listener) {
+        return db.collection("orders").whereEqualTo("customerId", customerId)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener(listener);
     }
 
-    public void listenOrdersRealtime(EventListener<QuerySnapshot> listener) {
-        db.collection("orders").addSnapshotListener(listener);
+    public ListenerRegistration listenOrdersRealtime(EventListener<QuerySnapshot> listener) {
+        return db.collection("orders")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener(listener);
     }
 
     /** =================== REVIEWS =================== */

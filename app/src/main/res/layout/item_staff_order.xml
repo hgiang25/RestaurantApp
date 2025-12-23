@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="3dp"
+    app:cardBackgroundColor="@color/surface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Status Indicator -->
+        <View
+            android:id="@+id/statusIndicator"
+            android:layout_width="5dp"
+            android:layout_height="match_parent"
+            android:background="@color/status_pending"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Header Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/txtOrderId"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Đơn #ABC123"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"/>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/txtTableInfo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🪑 Bàn 5"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_secondary"/>
+
+                        <TextView
+                            android:id="@+id/txtOrderType"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Ăn tại chỗ"
+                            android:textSize="11sp"
+                            android:textColor="@color/white"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="2dp"
+                            android:background="@drawable/bg_chip_small"/>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="Chờ xác nhận"
+                    android:textSize="11sp"
+                    android:textColor="@color/white"
+                    app:chipMinHeight="28dp"
+                    app:chipCornerRadius="8dp"
+                    app:chipBackgroundColor="@color/status_pending"/>
+
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider"
+                android:layout_marginVertical="12dp"/>
+
+            <!-- Order Items -->
+            <TextView
+                android:id="@+id/txtOrderItems"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Món 1 x2\n• Món 2 x1"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:lineSpacingMultiplier="1.4"
+                android:maxLines="5"
+                android:ellipsize="end"/>
+
+            <!-- Footer Row: Time & Price -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/txtOrderTime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🕐 10:30 12/12"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_hint"/>
+
+                <TextView
+                    android:id="@+id/txtTotalPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="250.000đ"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/secondary"/>
+
+            </LinearLayout>
+
+            <!-- Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancel"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Hủy"
+                    android:textSize="13sp"
+                    app:strokeColor="@color/status_cancelled"
+                    android:textColor="@color/status_cancelled"
+                    app:cornerRadius="10dp"
+                    android:visibility="gone"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAction2"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:text="Action 2"
+                    android:textSize="13sp"
+                    app:cornerRadius="10dp"
+                    android:visibility="gone"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAction1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:text="Xác nhận"
+                    android:textSize="13sp"
+                    app:cornerRadius="10dp"
+                    android:visibility="gone"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
