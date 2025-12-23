@@ -5,9 +5,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +25,7 @@ import com.example.restaurantapp.adapters.CartAdapter;
 import com.example.restaurantapp.adapters.MenuAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.MenuItem;
+import com.example.restaurantapp.models.TableModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -47,6 +51,9 @@ public class CustomerMenuFragment extends Fragment {
     
     // Voucher
     private DocumentSnapshot appliedVoucher = null;
+    
+    // Tables for dine-in
+    private List<TableModel> tableList = new ArrayList<>();
 
     @Nullable
     @Override
@@ -157,6 +164,28 @@ public class CustomerMenuFragment extends Fragment {
         RecyclerView recyclerCartItems = dialogView.findViewById(R.id.recyclerCartItems);
         MaterialButton btnClearCart = dialogView.findViewById(R.id.btnClearCart);
         MaterialButton btnPlaceOrder = dialogView.findViewById(R.id.btnPlaceOrder);
+        
+        // Order type views
+        RadioGroup radioGroupOrderType = dialogView.findViewById(R.id.radioGroupOrderType);
+        LinearLayout layoutTableSelection = dialogView.findViewById(R.id.layoutTableSelection);
+        LinearLayout layoutAddressInput = dialogView.findViewById(R.id.layoutAddressInput);
+        Spinner spinnerTables = dialogView.findViewById(R.id.spinnerTables);
+        TextInputEditText edtDeliveryAddress = dialogView.findViewById(R.id.edtDeliveryAddress);
+        TextInputEditText edtPhoneNumber = dialogView.findViewById(R.id.edtPhoneNumber);
+
+        // Load tables for spinner
+        loadTablesForSpinner(spinnerTables);
+
+        // Order type radio button listener
+        radioGroupOrderType.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.radioDineIn) {
+                layoutTableSelection.setVisibility(View.VISIBLE);
+                layoutAddressInput.setVisibility(View.GONE);
+            } else if (checkedId == R.id.radioTakeaway) {
+                layoutTableSelection.setVisibility(View.GONE);
+                layoutAddressInput.setVisibility(View.VISIBLE);
+            }
+        });
 
         // Build cart items list
         List<CartAdapter.CartItem> cartItems = new ArrayList<>();
@@ -293,14 +322,75 @@ public class CustomerMenuFragment extends Fragment {
 
         // Place order button
         btnPlaceOrder.setOnClickListener(v -> {
-            dialog.dismiss();
-            placeOrder();
+            // Validate order type selection
+            int selectedOrderType = radioGroupOrderType.getCheckedRadioButtonId();
+            
+            if (selectedOrderType == R.id.radioDineIn) {
+                // Dine-in - check table selection
+                if (tableList.isEmpty()) {
+                    Toast.makeText(getContext(), "Không có bàn trống. Vui lòng thử lại sau!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                int selectedPosition = spinnerTables.getSelectedItemPosition();
+                if (selectedPosition < 0 || selectedPosition >= tableList.size()) {
+                    Toast.makeText(getContext(), "Vui lòng chọn bàn!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                TableModel selectedTable = tableList.get(selectedPosition);
+                dialog.dismiss();
+                placeOrder("dine_in", selectedTable.getId(), selectedTable.getName(), null, null);
+            } else if (selectedOrderType == R.id.radioTakeaway) {
+                // Takeaway - check address
+                String address = edtDeliveryAddress.getText().toString().trim();
+                String phone = edtPhoneNumber.getText().toString().trim();
+                
+                if (address.isEmpty()) {
+                    edtDeliveryAddress.setError("Vui lòng nhập địa chỉ");
+                    return;
+                }
+                if (phone.isEmpty()) {
+                    edtPhoneNumber.setError("Vui lòng nhập số điện thoại");
+                    return;
+                }
+                dialog.dismiss();
+                placeOrder("takeaway", null, null, address, phone);
+            } else {
+                Toast.makeText(getContext(), "Vui lòng chọn hình thức đặt hàng!", Toast.LENGTH_SHORT).show();
+            }
         });
 
         dialog.show();
     }
+    
+    private void loadTablesForSpinner(Spinner spinnerTables) {
+        FirebaseService.getInstance().listenFreeTables((value, error) -> {
+            if (error != null || value == null) return;
+            
+            tableList.clear();
+            List<String> tableNames = new ArrayList<>();
+            
+            for (DocumentSnapshot doc : value.getDocuments()) {
+                TableModel table = doc.toObject(TableModel.class);
+                if (table != null) {
+                    table.setId(doc.getId());
+                    tableList.add(table);
+                    tableNames.add(table.getName() + " (" + table.getCapacity() + " chỗ)");
+                }
+            }
+            
+            if (getContext() != null) {
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                        getContext(),
+                        android.R.layout.simple_spinner_item,
+                        tableNames
+                );
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerTables.setAdapter(adapter);
+            }
+        });
+    }
 
-    private void placeOrder() {
+    private void placeOrder(String orderType, String tableId, String tableName, String address, String phone) {
         String customerId = FirebaseService.getInstance().getCurrentUserId();
         if (customerId == null) return;
 
@@ -353,23 +443,39 @@ public class CustomerMenuFragment extends Fragment {
 
         // Gọi API tạo order với voucher
         Map<String, Object> voucherDataFinal = voucherData;
-        FirebaseService.getInstance().createOrder(customerId, null, items,
+        FirebaseService.getInstance().createOrder(customerId, tableId, items,
                 docRef -> {
-                    // Nếu có voucher, cập nhật thêm thông tin
-                    if (voucherDataFinal != null) {
-                        Map<String, Object> updates = new HashMap<>();
-                        updates.put("voucher", voucherDataFinal);
-                        updates.put("subtotal", finalSubtotal);
-                        updates.put("discount", finalDiscount);
-                        updates.put("total", finalTotal);
-                        
-                        FirebaseService.getInstance().getDb()
-                                .collection("orders")
-                                .document(docRef.getId())
-                                .update(updates);
+                    // Cập nhật thêm thông tin order
+                    Map<String, Object> updates = new HashMap<>();
+                    
+                    // Order type info
+                    updates.put("orderType", orderType);
+                    if ("dine_in".equals(orderType)) {
+                        updates.put("tableId", tableId);
+                        updates.put("tableName", tableName);
+                    } else if ("takeaway".equals(orderType)) {
+                        updates.put("deliveryAddress", address);
+                        updates.put("deliveryPhone", phone);
                     }
                     
-                    Toast.makeText(getContext(), "Đặt món thành công!", Toast.LENGTH_SHORT).show();
+                    // Voucher info
+                    if (voucherDataFinal != null) {
+                        updates.put("voucher", voucherDataFinal);
+                    }
+                    
+                    updates.put("subtotal", finalSubtotal);
+                    updates.put("discount", finalDiscount);
+                    updates.put("total", finalTotal);
+                    
+                    FirebaseService.getInstance().getDb()
+                            .collection("orders")
+                            .document(docRef.getId())
+                            .update(updates);
+                    
+                    String successMsg = "dine_in".equals(orderType) 
+                            ? "Đặt món thành công! Bàn: " + tableName
+                            : "Đặt món mang về thành công!";
+                    Toast.makeText(getContext(), successMsg, Toast.LENGTH_SHORT).show();
                     cart.clear();
                     appliedVoucher = null;
                 },
