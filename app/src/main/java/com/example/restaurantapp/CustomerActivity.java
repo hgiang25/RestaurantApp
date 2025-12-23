@@ -1,5 +1,6 @@
 package com.example.restaurantapp;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -15,6 +16,8 @@ import com.example.restaurantapp.fragments.customer.CustomerNotificationsFragmen
 import com.example.restaurantapp.fragments.customer.CustomerOrdersFragment;
 import com.example.restaurantapp.fragments.customer.CustomerProfileFragment;
 import com.example.restaurantapp.fragments.customer.CustomerReservationFragment;
+import com.example.restaurantapp.utils.LocaleHelper;
+import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
@@ -23,7 +26,16 @@ public class CustomerActivity extends AppCompatActivity {
     BottomNavigationView bottomNav;
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply saved settings
+        PreferenceManager prefs = new PreferenceManager(this);
+        prefs.applySavedSettings();
+        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_customer);
 

@@ -55,6 +55,11 @@ dependencies {
     implementation ("com.google.firebase:firebase-auth")
     implementation ("com.google.firebase:firebase-database")
     implementation ("com.google.firebase:firebase-firestore") // nếu dùng Firestore
+    implementation ("com.google.firebase:firebase-storage") // Firebase Storage for images
     implementation ("com.airbnb.android:lottie:6.4.1")  // Hoặc phiên bản mới nhất, kiểm tra trên Maven
     implementation ("de.hdodenhof:circleimageview:3.1.0")
+    
+    // Glide for image loading
+    implementation ("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.16.0")
 }
