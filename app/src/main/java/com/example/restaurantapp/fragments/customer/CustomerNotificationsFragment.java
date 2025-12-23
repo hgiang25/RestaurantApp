@@ -49,27 +49,20 @@ public class CustomerNotificationsFragment extends Fragment {
         String userId = FirebaseService.getInstance().getCurrentUserId();
         if (userId == null) return;
 
-        FirebaseService.getInstance().listenNotificationsRealtime(userId, (value, error) -> {
-            if (error != null || value == null) return;
+        String role = "customer";
 
-            notificationList.clear();
-            for (DocumentSnapshot doc : value.getDocuments()) {
-                NotificationModel notification = doc.toObject(NotificationModel.class);
-                if (notification != null) {
-                    notification.setId(doc.getId());
-                    notificationList.add(notification);
-                }
-            }
+        FirebaseService.getInstance()
+                .listenBroadcastNotifications(role, (value, error) -> {
+                    if (error != null || value == null) return;
 
-            if (notificationList.isEmpty()) {
-                txtEmpty.setVisibility(View.VISIBLE);
-                recyclerView.setVisibility(View.GONE);
-            } else {
-                txtEmpty.setVisibility(View.GONE);
-                recyclerView.setVisibility(View.VISIBLE);
-            }
+                    for (DocumentSnapshot doc : value.getDocuments()) {
+                        NotificationModel n = new NotificationModel();
+                        n.setMessage(doc.getString("message"));
+                        n.setCreatedAt(doc.getTimestamp("createdAt"));
+                        notificationList.add(n);
+                    }
 
-            adapter.notifyDataSetChanged();
-        });
+                    adapter.notifyDataSetChanged();
+                });
     }
 }

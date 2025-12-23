@@ -30,7 +30,11 @@ public class StaffNotificationsFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_notifications, container, false);
 
         recyclerView = view.findViewById(R.id.recyclerNotifications);
@@ -49,28 +53,29 @@ public class StaffNotificationsFragment extends Fragment {
         String userId = FirebaseService.getInstance().getCurrentUserId();
         if (userId == null) return;
 
-        FirebaseService.getInstance().listenNotificationsRealtime(userId, (value, error) -> {
-            if (!isAdded() || getContext() == null) return;
-            if (error != null || value == null) return;
+        FirebaseService.getInstance().listenNotificationsRealtime(userId,
+                (value, error) -> {
+                    if (error != null || value == null) return;
 
-            notificationList.clear();
-            for (DocumentSnapshot doc : value.getDocuments()) {
-                NotificationModel notification = doc.toObject(NotificationModel.class);
-                if (notification != null) {
-                    notification.setId(doc.getId());
-                    notificationList.add(notification);
-                }
-            }
+                    notificationList.clear();
+                    for (DocumentSnapshot doc : value.getDocuments()) {
+                        NotificationModel notification =
+                                doc.toObject(NotificationModel.class);
+                        if (notification != null) {
+                            notification.setId(doc.getId());
+                            notificationList.add(notification);
+                        }
+                    }
 
-            if (notificationList.isEmpty()) {
-                if (txtEmpty != null) txtEmpty.setVisibility(View.VISIBLE);
-                if (recyclerView != null) recyclerView.setVisibility(View.GONE);
-            } else {
-                if (txtEmpty != null) txtEmpty.setVisibility(View.GONE);
-                if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
-            }
+                    if (notificationList.isEmpty()) {
+                        txtEmpty.setVisibility(View.VISIBLE);
+                        recyclerView.setVisibility(View.GONE);
+                    } else {
+                        txtEmpty.setVisibility(View.GONE);
+                        recyclerView.setVisibility(View.VISIBLE);
+                    }
 
-            if (adapter != null) adapter.notifyDataSetChanged();
-        });
+                    adapter.notifyDataSetChanged();
+                });
     }
 }
