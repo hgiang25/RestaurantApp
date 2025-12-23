@@ -5,6 +5,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.example.restaurantapp.models.NotificationModel;
+import com.example.restaurantapp.models.TableModel;
 import com.example.restaurantapp.models.User;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -92,28 +93,70 @@ public class FirebaseService {
     }
 
     /** =================== TABLES =================== */
+
+    private ListenerRegistration tableListener;
+
+    /** Tạo bàn */
     public void createTable(String name, int capacity,
                             OnSuccessListener<DocumentReference> success,
                             OnFailureListener fail) {
+
         Map<String, Object> table = new HashMap<>();
         table.put("name", name);
         table.put("capacity", capacity);
-        table.put("status", "free");
-        db.collection("tables").add(table)
+        table.put("status", TableModel.STATUS_FREE);
+        table.put("createdAt", FieldValue.serverTimestamp());
+        table.put("updatedAt", FieldValue.serverTimestamp());
+
+        db.collection("tables")
+                .add(table)
                 .addOnSuccessListener(success)
                 .addOnFailureListener(fail);
     }
 
+    /** Update bàn */
     public void updateTable(String tableId, Map<String, Object> updates,
-                            OnSuccessListener<Void> success, OnFailureListener fail) {
-        db.collection("tables").document(tableId).update(updates)
+                            OnSuccessListener<Void> success,
+                            OnFailureListener fail) {
+
+        updates.put("updatedAt", FieldValue.serverTimestamp());
+
+        db.collection("tables")
+                .document(tableId)
+                .update(updates)
                 .addOnSuccessListener(success)
                 .addOnFailureListener(fail);
     }
 
-    public void listenTablesRealtime(EventListener<QuerySnapshot> listener) {
-        db.collection("tables").addSnapshotListener(listener);
+    /** Xoá bàn */
+    public void deleteTable(String tableId,
+                            OnSuccessListener<Void> success,
+                            OnFailureListener fail) {
+
+        db.collection("tables")
+                .document(tableId)
+                .delete()
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
     }
+
+    /** Listen realtime danh sách bàn */
+    public void listenTablesRealtime(EventListener<QuerySnapshot> listener) {
+        removeTableListener();
+
+        tableListener = db.collection("tables")
+                .orderBy("createdAt", Query.Direction.ASCENDING)
+                .addSnapshotListener(listener);
+    }
+
+    /** Remove listener */
+    public void removeTableListener() {
+        if (tableListener != null) {
+            tableListener.remove();
+            tableListener = null;
+        }
+    }
+
 
     /** =================== MENU =================== */
     public void addMenuItem(String name, double price, String category, boolean available,
