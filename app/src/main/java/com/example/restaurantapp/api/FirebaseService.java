@@ -1,5 +1,7 @@
 package com.example.restaurantapp.api;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.example.restaurantapp.models.NotificationModel;
@@ -17,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 public class FirebaseService {
+
+    private static final String TAG = "FirebaseService";
 
     private static FirebaseService instance;
     private final FirebaseAuth auth;
@@ -229,7 +233,13 @@ public class FirebaseService {
                         .whereEqualTo("targetUserId", userId)
                         .orderBy("createdAt", Query.Direction.DESCENDING)
                         .addSnapshotListener((value, error) -> {
-                            if (error != null || value == null) return;
+                            if (error != null) {
+                                Log.e(TAG, "Lỗi personal notifications: " + error.getMessage());
+                                return;
+                            }
+                            if (value == null) return;
+                            
+                            Log.d(TAG, "Personal notifications: " + value.size());
 
                             personalList.clear();
                             for (DocumentSnapshot doc : value.getDocuments()) {
@@ -250,7 +260,13 @@ public class FirebaseService {
                         .whereArrayContains("roles", role)
                         .orderBy("createdAt", Query.Direction.DESCENDING)
                         .addSnapshotListener((value, error) -> {
-                            if (error != null || value == null) return;
+                            if (error != null) {
+                                Log.e(TAG, "Lỗi broadcast notifications: " + error.getMessage());
+                                return;
+                            }
+                            if (value == null) return;
+                            
+                            Log.d(TAG, "Broadcast notifications for role " + role + ": " + value.size());
 
                             broadcastList.clear();
                             for (DocumentSnapshot doc : value.getDocuments()) {

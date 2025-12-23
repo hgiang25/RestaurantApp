@@ -1,6 +1,7 @@
 package com.example.restaurantapp.fragments.customer;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,9 +19,9 @@ import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.NotificationModel;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class CustomerNotificationsFragment extends Fragment {
@@ -29,7 +30,10 @@ public class CustomerNotificationsFragment extends Fragment {
     private TextView txtEmpty;
     private NotificationAdapter adapter;
     private List<NotificationModel> notificationList = new ArrayList<>();
-    private ListenerRegistration notificationListener;
+    private List<NotificationModel> personalList = new ArrayList<>();
+    private List<NotificationModel> broadcastList = new ArrayList<>();
+    private ListenerRegistration personalListener;
+    private ListenerRegistration broadcastListener;
 
     @Nullable
     @Override
@@ -43,98 +47,115 @@ public class CustomerNotificationsFragment extends Fragment {
         adapter = new NotificationAdapter(notificationList);
         recyclerView.setAdapter(adapter);
 
-        //loadNotifications();
-
-
         return view;
     }
 
     @Override
     public void onStart() {
         super.onStart();
-
-        String userId = FirebaseService.getInstance().getCurrentUserId();
-        String role = "customer";
-
-        notificationListener = FirebaseService.getInstance()
-                .listenNotificationsForUser(userId, role, mergedList -> {
-
-                    if (!isAdded()) return;
-
-                    notificationList.clear();
-                    notificationList.addAll(mergedList);
-
-                    txtEmpty.setVisibility(notificationList.isEmpty() ? View.VISIBLE : View.GONE);
-                    recyclerView.setVisibility(notificationList.isEmpty() ? View.GONE : View.VISIBLE);
-                    adapter.notifyDataSetChanged();
-                });
+        loadNotifications();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (notificationListener != null) {
-            notificationListener.remove();
-            notificationListener = null;
+        if (personalListener != null) {
+            personalListener.remove();
+            personalListener = null;
+        }
+        if (broadcastListener != null) {
+            broadcastListener.remove();
+            broadcastListener = null;
         }
     }
-
 
     private void loadNotifications() {
         String userId = FirebaseService.getInstance().getCurrentUserId();
         if (userId == null || !isAdded()) return;
 
         String role = "customer";
+        Log.d("NOTIF_CUSTOMER", "userId = " + userId + ", role = " + role);
 
-        FirebaseService.getInstance()
+        // 📩 Query 1: Personal notifications (chỉ cho user này)
+        personalListener = FirebaseService.getInstance()
                 .getDb()
                 .collection("notifications")
-                .whereIn("type", List.of("personal", "broadcast"))
-                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .whereEqualTo("type", "personal")
+                .whereEqualTo("targetUserId", userId)
                 .addSnapshotListener((value, error) -> {
-                    if (!isAdded() || error != null || value == null) return;
+                    if (error != null) {
+                        Log.e("NOTIF_CUSTOMER", "Lỗi personal query: " + error.getMessage());
+                        return;
+                    }
+                    if (!isAdded() || value == null) return;
 
-                    notificationList.clear();
+                    Log.d("NOTIF_CUSTOMER", "Personal notifications: " + value.size());
 
+                    personalList.clear();
                     for (DocumentSnapshot doc : value.getDocuments()) {
-
-                        String type = doc.getString("type");
-
-                        // 📩 Personal
-                        if ("personal".equals(type)) {
-                            String targetUserId = doc.getString("targetUserId");
-                            if (userId.equals(targetUserId)) {
-                                NotificationModel n = doc.toObject(NotificationModel.class);
-                                if (n != null) {
-                                    n.setId(doc.getId());
-                                    notificationList.add(n);
-                                }
-                            }
-                        }
-
-                        // 📢 Broadcast
-                        if ("broadcast".equals(type)) {
-                            List<String> roles = (List<String>) doc.get("roles");
-                            if (roles != null && roles.contains(role)) {
-                                NotificationModel n = doc.toObject(NotificationModel.class);
-                                if (n != null) {
-                                    n.setId(doc.getId());
-                                    notificationList.add(n);
-                                }
-                            }
+                        NotificationModel n = doc.toObject(NotificationModel.class);
+                        if (n != null) {
+                            n.setId(doc.getId());
+                            personalList.add(n);
+                            Log.d("NOTIF_CUSTOMER", "Personal: " + n.getMessage());
                         }
                     }
 
-                    if (notificationList.isEmpty()) {
-                        txtEmpty.setVisibility(View.VISIBLE);
-                        recyclerView.setVisibility(View.GONE);
-                    } else {
-                        txtEmpty.setVisibility(View.GONE);
-                        recyclerView.setVisibility(View.VISIBLE);
+                    mergeAndUpdateUI();
+                });
+
+        // 📢 Query 2: Broadcast notifications (cho role customer)
+        broadcastListener = FirebaseService.getInstance()
+                .getDb()
+                .collection("notifications")
+                .whereEqualTo("type", "broadcast")
+                .whereArrayContains("roles", role)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        Log.e("NOTIF_CUSTOMER", "Lỗi broadcast query: " + error.getMessage());
+                        return;
+                    }
+                    if (!isAdded() || value == null) return;
+
+                    Log.d("NOTIF_CUSTOMER", "Broadcast notifications: " + value.size());
+
+                    broadcastList.clear();
+                    for (DocumentSnapshot doc : value.getDocuments()) {
+                        NotificationModel n = doc.toObject(NotificationModel.class);
+                        if (n != null) {
+                            n.setId(doc.getId());
+                            broadcastList.add(n);
+                            Log.d("NOTIF_CUSTOMER", "Broadcast: " + n.getMessage());
+                        }
                     }
 
-                    adapter.notifyDataSetChanged();
+                    mergeAndUpdateUI();
                 });
     }
 
+    private void mergeAndUpdateUI() {
+        if (!isAdded()) return;
+
+        notificationList.clear();
+        notificationList.addAll(personalList);
+        notificationList.addAll(broadcastList);
+
+        // Sắp xếp theo thời gian mới nhất
+        Collections.sort(notificationList, (a, b) -> {
+            if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
+            return b.getCreatedAt().compareTo(a.getCreatedAt());
+        });
+
+        Log.d("NOTIF_CUSTOMER", "Tổng notifications: " + notificationList.size());
+
+        if (notificationList.isEmpty()) {
+            txtEmpty.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+        } else {
+            txtEmpty.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+
+        adapter.notifyDataSetChanged();
+    }
 }
