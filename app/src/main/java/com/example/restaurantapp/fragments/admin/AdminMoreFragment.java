@@ -63,6 +63,75 @@ public class AdminMoreFragment extends Fragment {
         return view;
     }
 
+    private void showSendTypeDialog() {
+        if (getContext() == null || !isAdded()) return;
+
+        String[] types = {
+                "Gửi theo nhóm (role)",
+                "Gửi cho 1 người"
+        };
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Chọn kiểu gửi thông báo")
+                .setItems(types, (dialog, which) -> {
+                    if (which == 0) {
+                        showBroadcastDialog(); // giữ nguyên logic cũ
+                    } else {
+                        showSingleUserNotificationDialog();
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void showSingleUserNotificationDialog() {
+        if (getContext() == null || !isAdded()) return;
+
+        LinearLayout layout = new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 10);
+
+        EditText edtUserId = new EditText(getContext());
+        edtUserId.setHint("User ID người nhận");
+        layout.addView(edtUserId);
+
+        EditText edtMessage = new EditText(getContext());
+        edtMessage.setHint("Nội dung thông báo");
+        edtMessage.setMinLines(3);
+        layout.addView(edtMessage);
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Gửi thông báo cho 1 người")
+                .setView(layout)
+                .setPositiveButton("Gửi", (dialog, which) -> {
+                    String userId = edtUserId.getText().toString().trim();
+                    String message = edtMessage.getText().toString().trim();
+
+                    if (userId.isEmpty() || message.isEmpty()) {
+                        Toast.makeText(getContext(), "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    FirebaseService.getInstance().sendNotification(
+                            userId,
+                            message,
+                            ref -> {
+                                if (isAdded()) {
+                                    Toast.makeText(getContext(), "Đã gửi thông báo!", Toast.LENGTH_SHORT).show();
+                                }
+                            },
+                            e -> {
+                                if (isAdded()) {
+                                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                    );
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+
     private void navigateToFragment(Fragment fragment) {
         try {
             if (!isAdded() || getActivity() == null || getActivity().isFinishing()) return;

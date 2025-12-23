@@ -321,21 +321,41 @@ public class FirebaseService {
 
     // 2️⃣ Broadcast notification to roles
     public void broadcastNotification(String message, List<String> roles,
-                                      OnSuccessListener<Void> success, OnFailureListener fail) {
-        db.collection("users").whereIn("role", roles).get()
-                .addOnSuccessListener(querySnapshot -> {
+                                      OnSuccessListener<Void> success,
+                                      OnFailureListener fail) {
+
+        DocumentReference notifRef =
+                db.collection("notifications").document();
+
+        Map<String, Object> notif = new HashMap<>();
+        notif.put("type", "broadcast");
+        notif.put("message", message);
+        notif.put("roles", roles);
+        notif.put("createdAt", Timestamp.now());
+        notif.put("createdBy", auth.getUid());
+
+        notifRef.set(notif)
+                .addOnSuccessListener(aVoid -> {
                     WriteBatch batch = db.batch();
-                    for (DocumentSnapshot userDoc : querySnapshot.getDocuments()) {
-                        DocumentReference notifRef = db.collection("notifications").document();
-                        Map<String,Object> notif = new HashMap<>();
-                        notif.put("userId", userDoc.getId());
-                        notif.put("message", message);
-                        notif.put("createdAt", Timestamp.now());
-                        batch.set(notifRef, notif);
+
+                    for (String role : roles) {
+                        DocumentReference roleRef =
+                                notifRef.collection("targets").document(role);
+
+                        Map<String, Object> target = new HashMap<>();
+                        target.put("role", role);
+                        target.put("createdAt", Timestamp.now());
+
+                        batch.set(roleRef, target);
                     }
-                    batch.commit().addOnSuccessListener(success).addOnFailureListener(fail);
-                }).addOnFailureListener(fail);
+
+                    batch.commit()
+                            .addOnSuccessListener(success)
+                            .addOnFailureListener(fail);
+                })
+                .addOnFailureListener(fail);
     }
+
 
     // 3️⃣ Loyalty points
     public void addLoyaltyPoints(String customerId, int points,
