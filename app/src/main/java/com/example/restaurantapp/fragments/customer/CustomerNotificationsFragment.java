@@ -17,6 +17,7 @@ import com.example.restaurantapp.adapters.NotificationAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.NotificationModel;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,22 +48,59 @@ public class CustomerNotificationsFragment extends Fragment {
 
     private void loadNotifications() {
         String userId = FirebaseService.getInstance().getCurrentUserId();
-        if (userId == null) return;
+        if (userId == null || !isAdded()) return;
 
         String role = "customer";
 
         FirebaseService.getInstance()
-                .listenBroadcastNotifications(role, (value, error) -> {
-                    if (error != null || value == null) return;
+                .getDb()
+                .collection("notifications")
+                .whereIn("type", List.of("personal", "broadcast"))
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener((value, error) -> {
+                    if (!isAdded() || error != null || value == null) return;
+
+                    notificationList.clear();
 
                     for (DocumentSnapshot doc : value.getDocuments()) {
-                        NotificationModel n = new NotificationModel();
-                        n.setMessage(doc.getString("message"));
-                        n.setCreatedAt(doc.getTimestamp("createdAt"));
-                        notificationList.add(n);
+
+                        String type = doc.getString("type");
+
+                        // 📩 Personal
+                        if ("personal".equals(type)) {
+                            String targetUserId = doc.getString("targetUserId");
+                            if (userId.equals(targetUserId)) {
+                                NotificationModel n = doc.toObject(NotificationModel.class);
+                                if (n != null) {
+                                    n.setId(doc.getId());
+                                    notificationList.add(n);
+                                }
+                            }
+                        }
+
+                        // 📢 Broadcast
+                        if ("broadcast".equals(type)) {
+                            List<String> roles = (List<String>) doc.get("roles");
+                            if (roles != null && roles.contains(role)) {
+                                NotificationModel n = doc.toObject(NotificationModel.class);
+                                if (n != null) {
+                                    n.setId(doc.getId());
+                                    notificationList.add(n);
+                                }
+                            }
+                        }
+                    }
+
+                    if (notificationList.isEmpty()) {
+                        txtEmpty.setVisibility(View.VISIBLE);
+                        recyclerView.setVisibility(View.GONE);
+                    } else {
+                        txtEmpty.setVisibility(View.GONE);
+                        recyclerView.setVisibility(View.VISIBLE);
                     }
 
                     adapter.notifyDataSetChanged();
                 });
     }
+
 }

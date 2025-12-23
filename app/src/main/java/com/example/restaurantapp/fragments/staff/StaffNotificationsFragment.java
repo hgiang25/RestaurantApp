@@ -51,19 +51,46 @@ public class StaffNotificationsFragment extends Fragment {
 
     private void loadNotifications() {
         String userId = FirebaseService.getInstance().getCurrentUserId();
-        if (userId == null) return;
+        if (userId == null || !isAdded()) return;
 
-        FirebaseService.getInstance().listenNotificationsRealtime(userId,
-                (value, error) -> {
-                    if (error != null || value == null) return;
+        String role = "staff";
+
+        FirebaseService.getInstance()
+                .getDb()
+                .collection("notifications")
+                .whereIn("type", List.of("personal", "broadcast"))
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .addSnapshotListener((value, error) -> {
+                    if (!isAdded() || error != null || value == null) return;
 
                     notificationList.clear();
+
                     for (DocumentSnapshot doc : value.getDocuments()) {
-                        NotificationModel notification =
-                                doc.toObject(NotificationModel.class);
-                        if (notification != null) {
-                            notification.setId(doc.getId());
-                            notificationList.add(notification);
+
+                        String type = doc.getString("type");
+
+                        // 📩 Personal
+                        if ("personal".equals(type)) {
+                            String targetUserId = doc.getString("targetUserId");
+                            if (userId.equals(targetUserId)) {
+                                NotificationModel n = doc.toObject(NotificationModel.class);
+                                if (n != null) {
+                                    n.setId(doc.getId());
+                                    notificationList.add(n);
+                                }
+                            }
+                        }
+
+                        // 📢 Broadcast
+                        if ("broadcast".equals(type)) {
+                            List<String> roles = (List<String>) doc.get("roles");
+                            if (roles != null && roles.contains(role)) {
+                                NotificationModel n = doc.toObject(NotificationModel.class);
+                                if (n != null) {
+                                    n.setId(doc.getId());
+                                    notificationList.add(n);
+                                }
+                            }
                         }
                     }
 
@@ -78,4 +105,5 @@ public class StaffNotificationsFragment extends Fragment {
                     adapter.notifyDataSetChanged();
                 });
     }
+
 }

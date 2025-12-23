@@ -191,15 +191,20 @@ public class FirebaseService {
 
     /** =================== NOTIFICATIONS =================== */
     public void sendNotification(String userId, String message,
-                                 OnSuccessListener<DocumentReference> success, OnFailureListener fail) {
+                                 OnSuccessListener<DocumentReference> success,
+                                 OnFailureListener fail) {
+
         Map<String, Object> notif = new HashMap<>();
-        notif.put("userId", userId);
+        notif.put("type", "personal");
+        notif.put("targetUserId", userId);
         notif.put("message", message);
         notif.put("createdAt", Timestamp.now());
+
         db.collection("notifications").add(notif)
                 .addOnSuccessListener(success)
                 .addOnFailureListener(fail);
     }
+
 
     public ListenerRegistration listenPersonalNotifications(
             String userId,
@@ -343,41 +348,21 @@ public class FirebaseService {
     }
 
     // 2️⃣ Broadcast notification to roles
-    public void broadcastNotification(
-            String message,
-            List<String> roles,
-            OnSuccessListener<Void> success,
-            OnFailureListener fail) {
+    public void broadcastNotification(String message, List<String> roles,
+                                      OnSuccessListener<Void> success,
+                                      OnFailureListener fail) {
 
-        DocumentReference notifRef =
-                db.collection("notifications").document();
+        Map<String, Object> notif = new HashMap<>();
+        notif.put("type", "broadcast");
+        notif.put("roles", roles);
+        notif.put("message", message);
+        notif.put("createdAt", Timestamp.now());
 
-        Map<String, Object> parent = new HashMap<>();
-        parent.put("type", "broadcast");
-        parent.put("createdAt", Timestamp.now());
-        parent.put("createdBy", auth.getUid());
-
-        notifRef.set(parent)
-                .addOnSuccessListener(v -> {
-                    WriteBatch batch = db.batch();
-
-                    for (String role : roles) {
-                        DocumentReference roleRef =
-                                notifRef.collection("targets").document(role);
-
-                        Map<String, Object> target = new HashMap<>();
-                        target.put("message", message);
-                        target.put("createdAt", Timestamp.now());
-
-                        batch.set(roleRef, target);
-                    }
-
-                    batch.commit()
-                            .addOnSuccessListener(success)
-                            .addOnFailureListener(fail);
-                })
+        db.collection("notifications").add(notif)
+                .addOnSuccessListener(r -> success.onSuccess(null))
                 .addOnFailureListener(fail);
     }
+
 
 
 
