@@ -196,8 +196,8 @@ public class CustomerReservationFragment extends Fragment {
                         Toast.makeText(getContext(), "Lỗi: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                         return;
                     }
-
                     reservationList.clear();
+
                     if (value != null) {
                         for (DocumentSnapshot doc : value.getDocuments()) {
                             ReservationModel reservation = doc.toObject(ReservationModel.class);
@@ -207,6 +207,10 @@ public class CustomerReservationFragment extends Fragment {
                             }
                         }
                     }
+
+                    reservationList.sort((a, b) ->
+                            Long.compare(b.getCreatedAt(), a.getCreatedAt())
+                    );
 
                     if (reservationList.isEmpty()) {
                         emptyState.setVisibility(View.VISIBLE);

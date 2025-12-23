@@ -653,7 +653,6 @@ public class FirebaseService {
     public ListenerRegistration listenReservationsByCustomer(String customerId, EventListener<QuerySnapshot> listener) {
         return db.collection("reservations")
                 .whereEqualTo("customerId", customerId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener(listener);
     }
 
@@ -666,7 +665,6 @@ public class FirebaseService {
     public ListenerRegistration listenReservationsByStatus(String status, EventListener<QuerySnapshot> listener) {
         return db.collection("reservations")
                 .whereEqualTo("status", status)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener(listener);
     }
 
