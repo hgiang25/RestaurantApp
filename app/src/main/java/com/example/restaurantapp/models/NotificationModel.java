@@ -5,13 +5,15 @@ import com.google.firebase.Timestamp;
 public class NotificationModel {
     private String id;
     private String userId;
+    private String title;
     private String message;
     private Timestamp createdAt;
 
     public NotificationModel() {}
 
-    public NotificationModel(String userId, String message, Timestamp createdAt) {
+    public NotificationModel(String userId, String title, String message, Timestamp createdAt) {
         this.userId = userId;
+        this.title = title;
         this.message = message;
         this.createdAt = createdAt;
     }
@@ -21,6 +23,9 @@ public class NotificationModel {
 
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }

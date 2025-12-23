@@ -14,6 +14,7 @@ import com.example.restaurantapp.fragments.customer.CustomerMenuFragment;
 import com.example.restaurantapp.fragments.customer.CustomerNotificationsFragment;
 import com.example.restaurantapp.fragments.customer.CustomerOrdersFragment;
 import com.example.restaurantapp.fragments.customer.CustomerProfileFragment;
+import com.example.restaurantapp.fragments.customer.CustomerReservationFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
@@ -41,6 +42,8 @@ public class CustomerActivity extends AppCompatActivity {
 
                 if (itemId == R.id.nav_menu) {
                     fragment = new CustomerMenuFragment();
+                } else if (itemId == R.id.nav_reservation) {
+                    fragment = new CustomerReservationFragment();
                 } else if (itemId == R.id.nav_orders) {
                     fragment = new CustomerOrdersFragment();
                 } else if (itemId == R.id.nav_notifications) {

@@ -200,19 +200,81 @@ public class FirebaseService {
     }
 
     /** =================== NOTIFICATIONS =================== */
-    public void sendNotification(String userId, String message,
+    public void sendNotification(String userId, String title, String message,
                                  OnSuccessListener<DocumentReference> success,
                                  OnFailureListener fail) {
 
         Map<String, Object> notif = new HashMap<>();
         notif.put("type", "personal");
         notif.put("targetUserId", userId);
+        notif.put("title", title);
         notif.put("message", message);
         notif.put("createdAt", Timestamp.now());
 
         db.collection("notifications").add(notif)
                 .addOnSuccessListener(success)
                 .addOnFailureListener(fail);
+    }
+
+    /** Đánh dấu notification đã đọc */
+    public void markNotificationAsRead(String notificationId, 
+                                       OnSuccessListener<Void> success,
+                                       OnFailureListener fail) {
+        String userId = getCurrentUserId();
+        if (userId == null) return;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("readAt", Timestamp.now());
+
+        db.collection("users").document(userId)
+                .collection("readNotifications").document(notificationId)
+                .set(data)
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    /** Lấy danh sách notification đã đọc */
+    public void getReadNotificationIds(java.util.function.Consumer<java.util.Set<String>> onResult) {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            onResult.accept(new java.util.HashSet<>());
+            return;
+        }
+
+        db.collection("users").document(userId)
+                .collection("readNotifications")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    java.util.Set<String> readIds = new java.util.HashSet<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        readIds.add(doc.getId());
+                    }
+                    onResult.accept(readIds);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error getting read notifications", e);
+                    onResult.accept(new java.util.HashSet<>());
+                });
+    }
+
+    /** Listen realtime danh sách notification đã đọc */
+    public ListenerRegistration listenReadNotifications(java.util.function.Consumer<java.util.Set<String>> onUpdate) {
+        String userId = getCurrentUserId();
+        if (userId == null) return null;
+
+        return db.collection("users").document(userId)
+                .collection("readNotifications")
+                .addSnapshotListener((value, error) -> {
+                    if (error != null || value == null) {
+                        onUpdate.accept(new java.util.HashSet<>());
+                        return;
+                    }
+                    java.util.Set<String> readIds = new java.util.HashSet<>();
+                    for (DocumentSnapshot doc : value.getDocuments()) {
+                        readIds.add(doc.getId());
+                    }
+                    onUpdate.accept(readIds);
+                });
     }
 
 
@@ -302,13 +364,14 @@ public class FirebaseService {
 
 
     // 2️⃣ Broadcast notification to roles
-    public void broadcastNotification(String message, List<String> roles,
+    public void broadcastNotification(String title, String message, List<String> roles,
                                       OnSuccessListener<Void> success,
                                       OnFailureListener fail) {
 
         Map<String, Object> notif = new HashMap<>();
         notif.put("type", "broadcast");
         notif.put("roles", roles);
+        notif.put("title", title);
         notif.put("message", message);
         notif.put("createdAt", Timestamp.now());
 
@@ -463,6 +526,41 @@ public class FirebaseService {
                 }).addOnFailureListener(fail);
     }
 
+    // Validate voucher code
+    public void validateVoucher(String voucherCode, double orderTotal,
+                                OnSuccessListener<DocumentSnapshot> success,
+                                OnFailureListener fail) {
+        db.collection("promotions")
+                .whereEqualTo("code", voucherCode.toUpperCase())
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        fail.onFailure(new Exception("Mã giảm giá không tồn tại hoặc đã hết hạn"));
+                        return;
+                    }
+                    
+                    DocumentSnapshot promo = querySnapshot.getDocuments().get(0);
+                    
+                    // Check expiry
+                    Timestamp validUntil = promo.getTimestamp("validUntil");
+                    if (validUntil != null && validUntil.toDate().before(new java.util.Date())) {
+                        fail.onFailure(new Exception("Mã giảm giá đã hết hạn"));
+                        return;
+                    }
+                    
+                    // Check min order amount
+                    Double minOrder = promo.getDouble("minOrderAmount");
+                    if (minOrder != null && orderTotal < minOrder) {
+                        fail.onFailure(new Exception("Đơn hàng tối thiểu " + String.format("%,.0f", minOrder) + "đ để sử dụng mã này"));
+                        return;
+                    }
+                    
+                    success.onSuccess(promo);
+                })
+                .addOnFailureListener(fail);
+    }
+
     // 5️⃣ Audit logs
     public void logAction(String userId, String action, String target,
                           Map<String,Object> extra, OnSuccessListener<DocumentReference> success, OnFailureListener fail) {
@@ -490,6 +588,60 @@ public class FirebaseService {
                 .whereEqualTo("status", status)
                 .whereGreaterThanOrEqualTo("createdAt", start)
                 .whereLessThanOrEqualTo("createdAt", end)
+                .addSnapshotListener(listener);
+    }
+
+    /** =================== RESERVATIONS =================== */
+    public void createReservation(Map<String, Object> reservation,
+                                  OnSuccessListener<DocumentReference> success,
+                                  OnFailureListener fail) {
+        db.collection("reservations").add(reservation)
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    public void updateReservation(String reservationId, Map<String, Object> updates,
+                                  OnSuccessListener<Void> success, OnFailureListener fail) {
+        db.collection("reservations").document(reservationId).update(updates)
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    public ListenerRegistration listenReservationsByCustomer(String customerId, EventListener<QuerySnapshot> listener) {
+        return db.collection("reservations")
+                .whereEqualTo("customerId", customerId)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener(listener);
+    }
+
+    public ListenerRegistration listenAllReservations(EventListener<QuerySnapshot> listener) {
+        return db.collection("reservations")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener(listener);
+    }
+
+    public ListenerRegistration listenReservationsByStatus(String status, EventListener<QuerySnapshot> listener) {
+        return db.collection("reservations")
+                .whereEqualTo("status", status)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener(listener);
+    }
+
+    public void checkTableAvailability(String tableId, String date, String time,
+                                       OnSuccessListener<QuerySnapshot> success,
+                                       OnFailureListener fail) {
+        db.collection("reservations")
+                .whereEqualTo("tableId", tableId)
+                .whereEqualTo("date", date)
+                .whereIn("status", java.util.Arrays.asList("pending", "confirmed"))
+                .get()
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    public ListenerRegistration listenFreeTables(EventListener<QuerySnapshot> listener) {
+        return db.collection("tables")
+                .whereEqualTo("status", "free")
                 .addSnapshotListener(listener);
     }
 }

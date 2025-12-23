@@ -49,7 +49,7 @@ public class AdminMoreFragment extends Fragment {
         btnInventory.setOnClickListener(v -> navigateToFragment(new AdminInventoryFragment()));
         btnPromotions.setOnClickListener(v -> navigateToFragment(new AdminPromotionsFragment()));
         btnReports.setOnClickListener(v -> navigateToFragment(new AdminReportsFragment()));
-        btnNotifications.setOnClickListener(v -> showBroadcastDialog());
+        btnNotifications.setOnClickListener(v -> showNotificationDialog());
         btnLoyalty.setOnClickListener(v -> showLoyaltyManagementDialog());
         btnAuditLogs.setOnClickListener(v -> showAuditLogsDialog());
         
@@ -63,72 +63,123 @@ public class AdminMoreFragment extends Fragment {
         return view;
     }
 
-    private void showSendTypeDialog() {
-        if (getContext() == null || !isAdded()) return;
-
-        String[] types = {
-                "Gửi theo nhóm (role)",
-                "Gửi cho 1 người"
-        };
-
-        new AlertDialog.Builder(getContext())
-                .setTitle("Chọn kiểu gửi thông báo")
-                .setItems(types, (dialog, which) -> {
-                    if (which == 0) {
-                        showBroadcastDialog(); // giữ nguyên logic cũ
-                    } else {
-                        showSingleUserNotificationDialog();
-                    }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
-    }
-
-    private void showSingleUserNotificationDialog() {
+    private void showNotificationDialog() {
         if (getContext() == null || !isAdded()) return;
 
         LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 10);
 
-        EditText edtUserId = new EditText(getContext());
-        edtUserId.setHint("User ID người nhận");
-        layout.addView(edtUserId);
+        // Tiêu đề
+        EditText edtTitle = new EditText(getContext());
+        edtTitle.setHint("Tiêu đề thông báo");
+        layout.addView(edtTitle);
 
+        // Nội dung
         EditText edtMessage = new EditText(getContext());
         edtMessage.setHint("Nội dung thông báo");
         edtMessage.setMinLines(3);
         layout.addView(edtMessage);
 
         new AlertDialog.Builder(getContext())
-                .setTitle("Gửi thông báo cho 1 người")
+                .setTitle("Tạo thông báo")
                 .setView(layout)
-                .setPositiveButton("Gửi", (dialog, which) -> {
-                    String userId = edtUserId.getText().toString().trim();
+                .setPositiveButton("Tiếp tục", (dialog, which) -> {
+                    String title = edtTitle.getText().toString().trim();
                     String message = edtMessage.getText().toString().trim();
 
-                    if (userId.isEmpty() || message.isEmpty()) {
+                    if (title.isEmpty() || message.isEmpty()) {
                         Toast.makeText(getContext(), "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    FirebaseService.getInstance().sendNotification(
-                            userId,
-                            message,
-                            ref -> {
-                                if (isAdded()) {
-                                    Toast.makeText(getContext(), "Đã gửi thông báo!", Toast.LENGTH_SHORT).show();
-                                }
-                            },
-                            e -> {
-                                if (isAdded()) {
-                                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                    );
+                    // Chọn kiểu gửi
+                    showRecipientSelectionDialog(title, message);
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
+    }
+
+    private void showRecipientSelectionDialog(String title, String message) {
+        if (getContext() == null || !isAdded()) return;
+
+        String[] options = {
+                "Gửi cho Nhân viên",
+                "Gửi cho Khách hàng",
+                "Gửi cho Tất cả",
+                "Gửi cho 1 người cụ thể"
+        };
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Chọn người nhận")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // Nhân viên
+                            sendBroadcastNotification(title, message, Arrays.asList("staff"));
+                            break;
+                        case 1: // Khách hàng
+                            sendBroadcastNotification(title, message, Arrays.asList("customer"));
+                            break;
+                        case 2: // Tất cả
+                            sendBroadcastNotification(title, message, Arrays.asList("staff", "customer"));
+                            break;
+                        case 3: // 1 người cụ thể
+                            showUserIdInputDialog(title, message);
+                            break;
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void showUserIdInputDialog(String title, String message) {
+        if (getContext() == null || !isAdded()) return;
+
+        EditText edtUserId = new EditText(getContext());
+        edtUserId.setHint("Nhập User ID người nhận");
+        edtUserId.setPadding(50, 40, 50, 10);
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Gửi cho 1 người")
+                .setView(edtUserId)
+                .setPositiveButton("Gửi", (dialog, which) -> {
+                    String userId = edtUserId.getText().toString().trim();
+                    if (userId.isEmpty()) {
+                        Toast.makeText(getContext(), "Vui lòng nhập User ID", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    sendPersonalNotification(title, message, userId);
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void sendBroadcastNotification(String title, String message, java.util.List<String> roles) {
+        FirebaseService.getInstance().broadcastNotification(title, message, roles,
+                unused -> {
+                    if (getContext() != null && isAdded()) {
+                        Toast.makeText(getContext(), "Đã gửi thông báo!", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                e -> {
+                    if (getContext() != null && isAdded()) {
+                        Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void sendPersonalNotification(String title, String message, String userId) {
+        FirebaseService.getInstance().sendNotification(userId, title, message,
+                ref -> {
+                    if (isAdded()) {
+                        Toast.makeText(getContext(), "Đã gửi thông báo!", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                e -> {
+                    if (isAdded()) {
+                        Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
 
@@ -144,65 +195,6 @@ public class AdminMoreFragment extends Fragment {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void showBroadcastDialog() {
-        if (getContext() == null || !isAdded()) return;
-        
-        LinearLayout layout = new LinearLayout(getContext());
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 40, 50, 10);
-
-        EditText edtMessage = new EditText(getContext());
-        edtMessage.setHint("Nội dung thông báo");
-        edtMessage.setMinLines(3);
-        layout.addView(edtMessage);
-
-        String[] roles = {"staff", "customer"};
-        String[] roleLabels = {"Nhân viên", "Khách hàng", "Tất cả"};
-
-        new AlertDialog.Builder(getContext())
-                .setTitle("Gửi thông báo")
-                .setView(layout)
-                .setPositiveButton("Tiếp tục", (dialog, which) -> {
-                    String message = edtMessage.getText().toString().trim();
-                    if (message.isEmpty()) {
-                        Toast.makeText(getContext(), "Vui lòng nhập nội dung", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    showTargetSelectionDialog(message, roles, roleLabels);
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
-    }
-
-    private void showTargetSelectionDialog(String message, String[] roles, String[] roleLabels) {
-        if (getContext() == null || !isAdded()) return;
-        
-        new AlertDialog.Builder(getContext())
-                .setTitle("Gửi đến")
-                .setItems(roleLabels, (dialog, which) -> {
-                    java.util.List<String> targetRoles;
-                    if (which == 2) {
-                        targetRoles = Arrays.asList("staff", "customer");
-                    } else {
-                        targetRoles = Arrays.asList(roles[which]);
-                    }
-
-                    FirebaseService.getInstance().broadcastNotification(message, targetRoles,
-                            unused -> {
-                                if (getContext() != null && isAdded()) {
-                                    Toast.makeText(getContext(), "Đã gửi thông báo!", Toast.LENGTH_SHORT).show();
-                                }
-                            },
-                            e -> {
-                                if (getContext() != null && isAdded()) {
-                                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
     }
 
     private void showLoyaltyManagementDialog() {
