@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -23,6 +24,7 @@ import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.MenuItem;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
@@ -75,48 +77,63 @@ public class AdminMenuFragment extends Fragment {
     }
 
     private void showAddMenuDialog() {
-        if (getContext() == null || !isAdded()) return;
-        
-        LinearLayout layout = new LinearLayout(getContext());
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 40, 50, 10);
+        if (!isAdded() || getContext() == null) return;
 
-        EditText edtName = new EditText(getContext());
-        edtName.setHint("Tên món");
-        layout.addView(edtName);
+        View view = LayoutInflater.from(getContext())
+                .inflate(R.layout.dialog_add_menu_item, null);
 
-        EditText edtPrice = new EditText(getContext());
-        edtPrice.setHint("Giá (VNĐ)");
-        edtPrice.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        layout.addView(edtPrice);
+        EditText edtName = view.findViewById(R.id.edtItemName);
+        EditText edtPrice = view.findViewById(R.id.edtPrice);
+        EditText edtImageUrl = view.findViewById(R.id.edtImageUrl);
+        EditText edtDescription = view.findViewById(R.id.edtDescription);
+        AutoCompleteTextView spinnerCategory = view.findViewById(R.id.spinnerCategory);
+        SwitchMaterial switchAvailable = view.findViewById(R.id.switchAvailable);
 
-        Spinner spinnerCategory = new Spinner(getContext());
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(getContext(),
-                android.R.layout.simple_spinner_dropdown_item, categories);
-        spinnerCategory.setAdapter(spinnerAdapter);
-        layout.addView(spinnerCategory);
+        // setup category dropdown
+        ArrayAdapter<String> categoryAdapter =
+                new ArrayAdapter<>(getContext(),
+                        android.R.layout.simple_dropdown_item_1line,
+                        categories);
+        spinnerCategory.setAdapter(categoryAdapter);
 
-        new AlertDialog.Builder(getContext())
-                .setTitle("Thêm món mới")
-                .setView(layout)
-                .setPositiveButton("Thêm", (dialog, which) -> {
-                    String name = edtName.getText().toString().trim();
-                    String priceStr = edtPrice.getText().toString().trim();
-                    String category = spinnerCategory.getSelectedItem().toString();
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setView(view)
+                .create();
 
-                    if (name.isEmpty() || priceStr.isEmpty()) {
-                        Toast.makeText(getContext(), "Vui lòng điền đầy đủ thông tin", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+        view.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
 
-                    double price = Double.parseDouble(priceStr);
-                    FirebaseService.getInstance().addMenuItem(name, price, category, true, null, null,
-                            docRef -> Toast.makeText(getContext(), "Thêm món thành công!", Toast.LENGTH_SHORT).show(),
-                            e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        view.findViewById(R.id.btnSave).setOnClickListener(v -> {
+            String name = edtName.getText().toString().trim();
+            String priceStr = edtPrice.getText().toString().trim();
+            String category = spinnerCategory.getText().toString().trim();
+            String imageUrl = edtImageUrl.getText().toString().trim();
+            boolean available = switchAvailable.isChecked();
+
+            if (name.isEmpty() || priceStr.isEmpty() || category.isEmpty()) {
+                Toast.makeText(getContext(), "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            double price = Double.parseDouble(priceStr);
+
+            FirebaseService.getInstance().addMenuItem(
+                    name,
+                    price,
+                    category,
+                    available,
+                    imageUrl.isEmpty() ? null : imageUrl,
+                    null,
+                    ref -> {
+                        Toast.makeText(getContext(), "Thêm món thành công", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    },
+                    e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+            );
+        });
+
+        dialog.show();
     }
+
 
     private void showEditMenuDialog(MenuItem item) {
         String[] options = {"Sửa thông tin", item.isAvailable() ? "Tạm hết món" : "Có sẵn", "Hủy"};
@@ -139,46 +156,52 @@ public class AdminMenuFragment extends Fragment {
     }
 
     private void showEditInfoDialog(MenuItem item) {
-        LinearLayout layout = new LinearLayout(getContext());
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 40, 50, 10);
+        if (!isAdded() || getContext() == null) return;
 
-        EditText edtName = new EditText(getContext());
+        View view = LayoutInflater.from(getContext())
+                .inflate(R.layout.dialog_add_menu_item, null);
+
+        EditText edtName = view.findViewById(R.id.edtItemName);
+        EditText edtPrice = view.findViewById(R.id.edtPrice);
+        AutoCompleteTextView spinnerCategory = view.findViewById(R.id.spinnerCategory);
+        SwitchMaterial switchAvailable = view.findViewById(R.id.switchAvailable);
+
         edtName.setText(item.getName());
-        layout.addView(edtName);
-
-        EditText edtPrice = new EditText(getContext());
         edtPrice.setText(String.valueOf(item.getPrice()));
-        edtPrice.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        layout.addView(edtPrice);
+        switchAvailable.setChecked(item.isAvailable());
 
-        Spinner spinnerCategory = new Spinner(getContext());
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(getContext(),
-                android.R.layout.simple_spinner_dropdown_item, categories);
-        spinnerCategory.setAdapter(spinnerAdapter);
-        // Set selected category
-        for (int i = 0; i < categories.length; i++) {
-            if (categories[i].equals(item.getCategory())) {
-                spinnerCategory.setSelection(i);
-                break;
-            }
-        }
-        layout.addView(spinnerCategory);
+        ArrayAdapter<String> categoryAdapter =
+                new ArrayAdapter<>(getContext(),
+                        android.R.layout.simple_dropdown_item_1line,
+                        categories);
+        spinnerCategory.setAdapter(categoryAdapter);
+        spinnerCategory.setText(item.getCategory(), false);
 
-        new AlertDialog.Builder(getContext())
-                .setTitle("Sửa thông tin món")
-                .setView(layout)
-                .setPositiveButton("Lưu", (dialog, which) -> {
-                    Map<String, Object> updates = new HashMap<>();
-                    updates.put("name", edtName.getText().toString().trim());
-                    updates.put("price", Double.parseDouble(edtPrice.getText().toString().trim()));
-                    updates.put("category", spinnerCategory.getSelectedItem().toString());
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setView(view)
+                .create();
 
-                    FirebaseService.getInstance().updateMenuItem(item.getId(), updates,
-                            unused -> Toast.makeText(getContext(), "Cập nhật thành công!", Toast.LENGTH_SHORT).show(),
-                            e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        view.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
+
+        view.findViewById(R.id.btnSave).setOnClickListener(v -> {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("name", edtName.getText().toString().trim());
+            updates.put("price", Double.parseDouble(edtPrice.getText().toString().trim()));
+            updates.put("category", spinnerCategory.getText().toString().trim());
+            updates.put("available", switchAvailable.isChecked());
+
+            FirebaseService.getInstance().updateMenuItem(
+                    item.getId(),
+                    updates,
+                    unused -> {
+                        Toast.makeText(getContext(), "Cập nhật thành công", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    },
+                    e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+            );
+        });
+
+        dialog.show();
     }
+
 }
