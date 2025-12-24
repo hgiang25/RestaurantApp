@@ -420,6 +420,7 @@ public class CustomerMenuFragment extends Fragment {
         for (Map.Entry<String, Integer> entry : cart.entrySet()) {
             Map<String, Object> itemMap = new HashMap<>();
             itemMap.put("menuId", entry.getKey());
+            itemMap.put("menuItemId", entry.getKey()); // Dùng cho trừ nguyên liệu theo công thức
             itemMap.put("quantity", entry.getValue());
             
             // Tìm tên món

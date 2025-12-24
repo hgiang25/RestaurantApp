@@ -224,6 +224,9 @@ public class StaffOrderAdapter extends RecyclerView.Adapter<StaffOrderAdapter.Or
                     btnAction1.setBackgroundTintList(ColorStateList.valueOf(
                             ContextCompat.getColor(itemView.getContext(), R.color.status_pending)));
                     btnAction1.setOnClickListener(v -> {
+                        android.util.Log.d("StaffOrderAdapter", "=== NÚT BẮT ĐẦU NẤU ĐƯỢC NHẤN ===");
+                        android.util.Log.d("StaffOrderAdapter", "Order ID: " + order.getId());
+                        android.util.Log.d("StaffOrderAdapter", "Listener null? " + (listener == null));
                         if (listener != null) listener.onPreparing(order);
                     });
                     break;

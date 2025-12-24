@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.restaurantapp.R;
 import com.example.restaurantapp.adapters.StaffOrderAdapter;
 import com.example.restaurantapp.api.FirebaseService;
+import com.example.restaurantapp.models.OrderItem;
 import com.example.restaurantapp.models.OrderModel;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -180,7 +181,15 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
     @Override
     public void onPreparing(OrderModel order) {
-        updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
+        android.util.Log.d("StaffOrders", "=== onPreparing ĐƯỢC GỌI ===");
+        android.util.Log.d("StaffOrders", "Order ID: " + order.getId());
+        android.util.Log.d("StaffOrders", "Order status: " + order.getStatus());
+        Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
+        
+        // Khi bắt đầu chuẩn bị, trừ nguyên liệu từ kho
+        deductIngredientsForOrder(order, () -> {
+            updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
+        });
     }
 
     @Override
@@ -255,6 +264,142 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
                     
                     doc.getReference().update("loyaltyPoints", newPoints);
                 });
+    }
+
+    /**
+     * Trừ nguyên liệu từ kho khi bắt đầu chuẩn bị đơn hàng
+     * Dựa trên công thức của từng món trong đơn
+     */
+    private void deductIngredientsForOrder(OrderModel order, Runnable onComplete) {
+        // Lấy items - có thể là List<OrderItem> hoặc List<Map>
+        Object itemsObj = order.getItems();
+        if (itemsObj == null) {
+            android.util.Log.d("StaffOrders", "Đơn hàng không có items");
+            onComplete.run();
+            return;
+        }
+
+        List<?> items = (List<?>) itemsObj;
+        if (items.isEmpty()) {
+            android.util.Log.d("StaffOrders", "Đơn hàng items rỗng");
+            onComplete.run();
+            return;
+        }
+
+        android.util.Log.d("StaffOrders", "Bắt đầu trừ kho cho " + items.size() + " món, kiểu: " + items.get(0).getClass().getSimpleName());
+
+        final int[] pendingDeductions = {0};
+        final int[] completedDeductions = {0};
+        final boolean[] hasError = {false};
+
+        // Đếm số món cần trừ
+        for (Object itemObj : items) {
+            String menuItemId = extractMenuItemId(itemObj);
+            if (menuItemId != null && !menuItemId.isEmpty()) {
+                pendingDeductions[0]++;
+            }
+        }
+
+        android.util.Log.d("StaffOrders", "Số món cần trừ: " + pendingDeductions[0]);
+
+        if (pendingDeductions[0] == 0) {
+            android.util.Log.d("StaffOrders", "Không có món nào có menuItemId để trừ");
+            onComplete.run();
+            return;
+        }
+
+        // Trừ nguyên liệu cho từng món
+        for (Object itemObj : items) {
+            String menuItemId = extractMenuItemId(itemObj);
+            int quantity = extractQuantity(itemObj);
+            String itemName = extractItemName(itemObj);
+
+            if (menuItemId != null && !menuItemId.isEmpty()) {
+                android.util.Log.d("StaffOrders", "Đang trừ kho cho: " + itemName + " x" + quantity + " (menuItemId: " + menuItemId + ")");
+                FirebaseService.getInstance().deductIngredientsFromRecipe(
+                        menuItemId,
+                        quantity,
+                        unused -> {
+                            android.util.Log.d("StaffOrders", "Đã trừ kho cho: " + itemName);
+                            completedDeductions[0]++;
+                            // Khi tất cả đã xong thì gọi callback
+                            if (completedDeductions[0] >= pendingDeductions[0]) {
+                                if (!hasError[0] && isAdded()) {
+                                    // Cập nhật trạng thái món ăn sau khi trừ kho
+                                    checkAndUpdateMenuAvailability();
+                                }
+                                onComplete.run();
+                            }
+                        },
+                        e -> {
+                            hasError[0] = true;
+                            completedDeductions[0]++;
+                            if (completedDeductions[0] >= pendingDeductions[0]) {
+                                onComplete.run();
+                            }
+                            // Log error nhưng không block flow
+                            android.util.Log.e("StaffOrders", "Lỗi trừ kho: " + e.getMessage());
+                        }
+                );
+            }
+        }
+    }
+
+    /**
+     * Kiểm tra và cập nhật trạng thái món ăn sau khi trừ kho
+     */
+    private void checkAndUpdateMenuAvailability() {
+        // Gọi service để kiểm tra lại inventory và cập nhật trạng thái món ăn
+        // Tính năng này đã có trong AdminRecipeFragment - syncMenuItemsStatus
+        // Ở đây ta chỉ log hoặc có thể gửi notification cho admin
+        android.util.Log.d("StaffOrders", "Đã trừ nguyên liệu - cần kiểm tra lại trạng thái món");
+    }
+
+    /**
+     * Lấy menuItemId từ item (có thể là OrderItem hoặc Map)
+     */
+    private String extractMenuItemId(Object itemObj) {
+        if (itemObj instanceof OrderItem) {
+            return ((OrderItem) itemObj).getMenuItemId();
+        } else if (itemObj instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) itemObj;
+            // Thử lấy menuItemId, nếu không có thì lấy menuId
+            String menuItemId = (String) map.get("menuItemId");
+            if (menuItemId == null || menuItemId.isEmpty()) {
+                menuItemId = (String) map.get("menuId");
+            }
+            return menuItemId;
+        }
+        return null;
+    }
+
+    /**
+     * Lấy quantity từ item (có thể là OrderItem hoặc Map)
+     */
+    private int extractQuantity(Object itemObj) {
+        if (itemObj instanceof OrderItem) {
+            return ((OrderItem) itemObj).getQuantity();
+        } else if (itemObj instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) itemObj;
+            Object qtyObj = map.get("quantity");
+            if (qtyObj instanceof Number) {
+                return ((Number) qtyObj).intValue();
+            }
+        }
+        return 1;
+    }
+
+    /**
+     * Lấy name từ item (có thể là OrderItem hoặc Map)
+     */
+    private String extractItemName(Object itemObj) {
+        if (itemObj instanceof OrderItem) {
+            return ((OrderItem) itemObj).getName();
+        } else if (itemObj instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) itemObj;
+            return (String) map.get("name");
+        }
+        return "Unknown";
     }
     
     private void showOrderDetailsDialog(OrderModel order) {

@@ -820,9 +820,12 @@ public class FirebaseService {
     public void deductIngredientsFromRecipe(String menuItemId, int quantity,
                                             OnSuccessListener<Void> success,
                                             OnFailureListener fail) {
+        Log.d(TAG, "deductIngredientsFromRecipe: menuItemId=" + menuItemId + ", quantity=" + quantity);
+        
         getRecipeByMenuItemId(menuItemId,
                 querySnapshot -> {
                     if (querySnapshot.isEmpty()) {
+                        Log.d(TAG, "Không tìm thấy công thức cho menuItemId: " + menuItemId);
                         success.onSuccess(null); // Không có công thức thì bỏ qua
                         return;
                     }
@@ -832,9 +835,12 @@ public class FirebaseService {
                             (List<Map<String, Object>>) recipeDoc.get("ingredients");
 
                     if (ingredients == null || ingredients.isEmpty()) {
+                        Log.d(TAG, "Công thức không có nguyên liệu: " + menuItemId);
                         success.onSuccess(null);
                         return;
                     }
+
+                    Log.d(TAG, "Tìm thấy " + ingredients.size() + " nguyên liệu cần trừ");
 
                     WriteBatch batch = db.batch();
 
@@ -849,16 +855,26 @@ public class FirebaseService {
                         }
 
                         double totalDeduct = qtyRequired * quantity;
+                        Log.d(TAG, "Trừ nguyên liệu: " + ing.get("ingredientName") + " - " + totalDeduct);
 
                         DocumentReference stockRef = db.collection("inventory").document(ingId);
                         batch.update(stockRef, "quantity", FieldValue.increment(-totalDeduct));
                     }
 
                     batch.commit()
-                            .addOnSuccessListener(success)
-                            .addOnFailureListener(fail);
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "Đã trừ kho thành công cho menuItemId: " + menuItemId);
+                                success.onSuccess(null);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Lỗi trừ kho: " + e.getMessage());
+                                fail.onFailure(e);
+                            });
                 },
-                fail
+                e -> {
+                    Log.e(TAG, "Lỗi tìm công thức: " + e.getMessage());
+                    fail.onFailure(e);
+                }
         );
     }
 
