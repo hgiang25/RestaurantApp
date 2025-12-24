@@ -58,66 +58,101 @@ public class CustomerOrderAdapter extends RecyclerView.Adapter<CustomerOrderAdap
         }
 
         void bind(OrderModel order) {
-            txtOrderId.setText("Đơn #" + order.getId().substring(0, Math.min(8, order.getId().length())));
 
-            // Hiển thị items và tính tổng
+            // ===== Order ID =====
+            if (order.getId() != null) {
+                txtOrderId.setText(
+                        "Đơn #" + order.getId().substring(0, Math.min(8, order.getId().length()))
+                );
+            } else {
+                txtOrderId.setText("Đơn #---");
+            }
+
+            // ===== Hiển thị danh sách món (KHÔNG tính lại total) =====
             StringBuilder itemsText = new StringBuilder();
-            double total = 0;
             if (order.getItems() != null) {
                 for (Object item : order.getItems()) {
                     if (item instanceof Map) {
                         Map<String, Object> itemMap = (Map<String, Object>) item;
+
                         String name = (String) itemMap.get("name");
                         Object qtyObj = itemMap.get("quantity");
-                        Object priceObj = itemMap.get("price");
                         int qty = qtyObj instanceof Number ? ((Number) qtyObj).intValue() : 1;
-                        double price = priceObj instanceof Number ? ((Number) priceObj).doubleValue() : 0;
-                        total += price * qty;
+
                         if (name != null) {
-                            itemsText.append("• ").append(name).append(" x").append(qty).append("\n");
+                            itemsText.append("• ")
+                                    .append(name)
+                                    .append(" x")
+                                    .append(qty)
+                                    .append("\n");
                         }
                     }
                 }
             }
-            txtOrderItems.setText(itemsText.toString().trim());
+
+            txtOrderItems.setText(
+                    itemsText.length() > 0 ? itemsText.toString().trim() : "Không có món"
+            );
+
+            // ===== Tổng tiền (LẤY TRỰC TIẾP TỪ FIRESTORE) =====
+            Double total = order.getTotal();
+            if (total == null) total = 0.0;
             txtTotal.setText(String.format("Tổng: %,.0f đ", total));
 
-            // Hiển thị thời gian
+            // ===== Thời gian =====
             if (order.getCreatedAt() != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault());
                 txtOrderTime.setText(sdf.format(order.getCreatedAt().toDate()));
+            } else {
+                txtOrderTime.setText("");
             }
 
-            // Hiển thị status
+            // ===== Reset chip (QUAN TRỌNG để tránh lỗi RecyclerView) =====
+            chipStatus.setChipBackgroundColor(null);
+
+            // ===== Status =====
+            String status = order.getStatus();
             String statusText;
             int statusColor;
-            switch (order.getStatus()) {
+
+            if (status == null) status = "";
+
+            switch (status) {
                 case "pending":
                     statusText = "Chờ xác nhận";
                     statusColor = 0xFFFF9800;
                     break;
+
                 case "confirmed":
                     statusText = "Đã xác nhận";
                     statusColor = 0xFF2196F3;
                     break;
+
                 case "preparing":
                     statusText = "Đang chuẩn bị";
                     statusColor = 0xFF9C27B0;
                     break;
+
                 case "served":
                     statusText = "Đã phục vụ";
                     statusColor = 0xFF4CAF50;
                     break;
+
                 case "paid":
                     statusText = "Đã thanh toán";
                     statusColor = 0xFF607D8B;
                     break;
+
                 default:
-                    statusText = order.getStatus();
+                    statusText = status.isEmpty() ? "Không rõ" : status;
                     statusColor = 0xFF9E9E9E;
+                    break;
             }
+
             chipStatus.setText(statusText);
-            chipStatus.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(statusColor));
+            chipStatus.setChipBackgroundColor(
+                    android.content.res.ColorStateList.valueOf(statusColor)
+            );
         }
     }
 }

@@ -95,8 +95,17 @@ public class AdminInventoryFragment extends Fragment {
                 return;
             }
 
-            double quantity = Double.parseDouble(quantityStr);
-            double minQty = minQtyStr.isEmpty() ? 10 : Double.parseDouble(minQtyStr);
+            quantityStr = quantityStr.replace(",", ".");
+            minQtyStr = minQtyStr.replace(",", ".");
+
+            double quantity, minQty;
+            try {
+                quantity = Double.parseDouble(quantityStr);
+                minQty = minQtyStr.isEmpty() ? 10 : Double.parseDouble(minQtyStr);
+            } catch (NumberFormatException e) {
+                Toast.makeText(getContext(), "Số lượng không hợp lệ", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             FirebaseService.getInstance().addStockItem(name, quantity, unit,
                     ref -> {
@@ -200,9 +209,21 @@ public class AdminInventoryFragment extends Fragment {
 
             Map<String, Object> updates = new HashMap<>();
             updates.put("name", name);
-            updates.put("quantity", Double.parseDouble(quantityStr));
             updates.put("unit", unit);
-            updates.put("minQuantity", minQtyStr.isEmpty() ? 10 : Double.parseDouble(minQtyStr));
+            quantityStr = quantityStr.replace(",", ".");
+            minQtyStr = minQtyStr.replace(",", ".");
+
+            double quantity, minQty;
+            try {
+                quantity = Double.parseDouble(quantityStr);
+                minQty = minQtyStr.isEmpty() ? 10 : Double.parseDouble(minQtyStr);
+            } catch (NumberFormatException e) {
+                Toast.makeText(getContext(), "Số lượng không hợp lệ", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            updates.put("quantity", quantity);
+            updates.put("minQuantity", minQty);
 
             FirebaseService.getInstance().updateStockItem(item.getId(), updates,
                     unused -> {

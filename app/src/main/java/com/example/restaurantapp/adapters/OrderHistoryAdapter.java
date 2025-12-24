@@ -58,7 +58,7 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
         holder.txtStatus.setTextColor(holder.itemView.getContext().getColor(getStatusColor(status)));
 
         // Order type
-        String orderType = doc.getString("orderType");
+        String orderType = doc.getString("type");
         if ("takeaway".equals(orderType)) {
             holder.txtOrderType.setText("Mang về");
             holder.txtOrderType.setVisibility(View.VISIBLE);
@@ -109,8 +109,8 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
             case "pending": return "Chờ xác nhận";
             case "confirmed": return "Đã xác nhận";
             case "preparing": return "Đang chuẩn bị";
-            case "ready": return "Sẵn sàng";
-            case "completed": return "Hoàn thành";
+            case "served": return "Đã phục vụ";
+            case "paid": return "Đã thanh toán";
             case "cancelled": return "Đã hủy";
             default: return status;
         }

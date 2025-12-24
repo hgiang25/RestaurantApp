@@ -215,7 +215,7 @@ public class FirebaseService {
                             OnSuccessListener<DocumentReference> success, OnFailureListener fail) {
         Map<String, Object> order = new HashMap<>();
         order.put("customerId", customerId);
-        order.put("type", orderType);  // Đã có từ fix trước
+        order.put("orderType", orderType);// Đã có từ fix trước
         order.put("items", items);
         order.put("status", "pending"); // pending, confirmed, preparing, served, paid
         order.put("createdAt", Timestamp.now());
