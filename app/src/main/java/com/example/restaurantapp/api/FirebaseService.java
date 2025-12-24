@@ -193,14 +193,42 @@ public class FirebaseService {
     }
 
     /** =================== ORDERS =================== */
-    public void createOrder(String customerId, String tableId, List<Map<String,Object>> items,
+    public void createOrder(String customerId, String orderType, String tableId, String tableName,
+                            String deliveryAddress, String deliveryPhone, List<Map<String,Object>> items,
+                            double subtotal, double discount, double total, Map<String, Object> voucher,
                             OnSuccessListener<DocumentReference> success, OnFailureListener fail) {
         Map<String, Object> order = new HashMap<>();
         order.put("customerId", customerId);
-        order.put("tableId", tableId);
+        order.put("type", orderType);  // Đã có từ fix trước
         order.put("items", items);
         order.put("status", "pending"); // pending, confirmed, preparing, served, paid
         order.put("createdAt", Timestamp.now());
+
+        // Thêm các field mới
+        order.put("subtotal", subtotal);
+        order.put("discount", discount);
+        order.put("total", total);
+        if (voucher != null) {
+            order.put("voucher", voucher);
+        }
+
+        // Field điều kiện theo type
+        if ("dine_in".equals(orderType)) {
+            if (tableId != null) {
+                order.put("tableId", tableId);
+            }
+            if (tableName != null) {
+                order.put("tableName", tableName);
+            }
+        } else if ("takeaway".equals(orderType)) {
+            if (deliveryAddress != null) {
+                order.put("deliveryAddress", deliveryAddress);
+            }
+            if (deliveryPhone != null) {
+                order.put("deliveryPhone", deliveryPhone);
+            }
+        }
+
         db.collection("orders").add(order)
                 .addOnSuccessListener(success)
                 .addOnFailureListener(fail);

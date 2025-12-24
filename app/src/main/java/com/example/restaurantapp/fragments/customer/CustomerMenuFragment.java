@@ -406,7 +406,10 @@ public class CustomerMenuFragment extends Fragment {
 
     private void placeOrder(String orderType, String tableId, String tableName, String address, String phone) {
         String customerId = FirebaseService.getInstance().getCurrentUserId();
-        if (customerId == null) return;
+        if (customerId == null) {
+            Toast.makeText(getContext(), "Vui lòng đăng nhập để đặt món!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         // Tính tổng tiền và giảm giá
         final double[] subtotal = {0};
@@ -455,45 +458,19 @@ public class CustomerMenuFragment extends Fragment {
         final double finalSubtotal = subtotal[0];
         final double finalDiscount = discount[0];
 
-        // Gọi API tạo order với voucher
+        // Gọi createOrder với đầy params (bỏ update)
         Map<String, Object> voucherDataFinal = voucherData;
-        FirebaseService.getInstance().createOrder(customerId, tableId, items,
+        FirebaseService.getInstance().createOrder(customerId, orderType, tableId, tableName, address, phone,
+                items, finalSubtotal, finalDiscount, finalTotal, voucherDataFinal,
                 docRef -> {
-                    // Cập nhật thêm thông tin order
-                    Map<String, Object> updates = new HashMap<>();
-                    
-                    // Order type info
-                    updates.put("orderType", orderType);
-                    if ("dine_in".equals(orderType)) {
-                        updates.put("tableId", tableId);
-                        updates.put("tableName", tableName);
-                    } else if ("takeaway".equals(orderType)) {
-                        updates.put("deliveryAddress", address);
-                        updates.put("deliveryPhone", phone);
-                    }
-                    
-                    // Voucher info
-                    if (voucherDataFinal != null) {
-                        updates.put("voucher", voucherDataFinal);
-                    }
-                    
-                    updates.put("subtotal", finalSubtotal);
-                    updates.put("discount", finalDiscount);
-                    updates.put("total", finalTotal);
-                    
-                    FirebaseService.getInstance().getDb()
-                            .collection("orders")
-                            .document(docRef.getId())
-                            .update(updates);
-                    
-                    String successMsg = "dine_in".equals(orderType) 
+                    String successMsg = "dine_in".equals(orderType)
                             ? "Đặt món thành công! Bàn: " + tableName
                             : "Đặt món mang về thành công!";
                     Toast.makeText(getContext(), successMsg, Toast.LENGTH_SHORT).show();
                     cart.clear();
                     appliedVoucher = null;
                 },
-                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                e -> Toast.makeText(getContext(), "Lỗi đặt món: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
     
     @Override
