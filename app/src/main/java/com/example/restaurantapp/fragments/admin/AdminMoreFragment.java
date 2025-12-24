@@ -39,6 +39,7 @@ public class AdminMoreFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_admin_more, container, false);
 
         MaterialButton btnInventory = view.findViewById(R.id.btnInventory);
+        MaterialButton btnRecipes = view.findViewById(R.id.btnRecipes);
         MaterialButton btnPromotions = view.findViewById(R.id.btnPromotions);
         MaterialButton btnReports = view.findViewById(R.id.btnReports);
         MaterialButton btnReservations = view.findViewById(R.id.btnReservations);
@@ -49,6 +50,7 @@ public class AdminMoreFragment extends Fragment {
         MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
 
         btnInventory.setOnClickListener(v -> navigateToFragment(new AdminInventoryFragment()));
+        btnRecipes.setOnClickListener(v -> navigateToFragment(new AdminRecipeFragment()));
         btnPromotions.setOnClickListener(v -> navigateToFragment(new AdminPromotionsFragment()));
         btnReports.setOnClickListener(v -> navigateToFragment(new AdminReportsFragment()));
         btnReservations.setOnClickListener(v -> navigateToFragment(new AdminReservationsFragment()));

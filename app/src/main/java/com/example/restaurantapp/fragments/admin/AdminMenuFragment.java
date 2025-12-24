@@ -2,14 +2,19 @@ package com.example.restaurantapp.fragments.admin;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,6 +27,8 @@ import com.example.restaurantapp.R;
 import com.example.restaurantapp.adapters.AdminMenuAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.MenuItem;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
@@ -37,6 +44,18 @@ public class AdminMenuFragment extends Fragment {
     private RecyclerView recyclerView;
     private AdminMenuAdapter adapter;
     private List<MenuItem> menuList = new ArrayList<>();
+    private List<MenuItem> filteredList = new ArrayList<>();
+
+    // Search & Filter
+    private EditText edtSearch;
+    private ImageView btnClearSearch;
+    private ChipGroup chipGroupCategories;
+    private TextView tvResultCount;
+    private LinearLayout layoutEmpty;
+    private TextView tvEmptyMessage;
+
+    private String currentCategory = "Tất cả";
+    private String currentSearchQuery = "";
 
     private String[] categories = {"Món chính", "Món phụ", "Đồ uống", "Tráng miệng", "Khác"};
 
@@ -45,11 +64,10 @@ public class AdminMenuFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_admin_menu, container, false);
 
-        recyclerView = view.findViewById(R.id.recyclerMenu);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        adapter = new AdminMenuAdapter(menuList, this::showEditMenuDialog);
-        recyclerView.setAdapter(adapter);
+        initViews(view);
+        setupCategoryChips();
+        setupSearch();
+        setupRecyclerView();
 
         ExtendedFloatingActionButton fabAdd = view.findViewById(R.id.fabAddMenu);
         fabAdd.setOnClickListener(v -> showAddMenuDialog());
@@ -59,66 +77,90 @@ public class AdminMenuFragment extends Fragment {
         return view;
     }
 
-    private void add50SampleMenuItems() {
-        // Danh sách món ăn mẫu: {Tên, Giá, Loại}
-        Object[][] items = {
-                {"Phở bò", 45000, "Món chính"}, {"Cơm gà", 55000, "Món chính"},
-                {"Bún chả", 50000, "Món chính"}, {"Mì xào", 40000, "Món chính"},
-                {"Cá chiên xốt chua ngọt", 60000, "Món chính"}, {"Gà nướng mật ong", 65000, "Món chính"},
-                {"Sườn xào chua ngọt", 70000, "Món chính"}, {"Bò lúc lắc", 75000, "Món chính"},
-                {"Tôm rang muối", 80000, "Món chính"}, {"Cơm chiên hải sản", 55000, "Món chính"},
-
-                {"Gỏi cuốn", 30000, "Món phụ"}, {"Nem rán", 35000, "Món phụ"},
-                {"Súp cua", 35000, "Món phụ"}, {"Bánh mì kẹp thịt", 25000, "Món phụ"},
-                {"Khoai tây chiên", 20000, "Món phụ"}, {"Chả giò rế", 30000, "Món phụ"},
-                {"Salad trộn", 25000, "Món phụ"}, {"Xôi gà", 35000, "Món phụ"},
-                {"Bánh bao", 20000, "Món phụ"}, {"Bánh xèo", 40000, "Món phụ"},
-
-                {"Trà đào", 20000, "Đồ uống"}, {"Cà phê sữa", 25000, "Đồ uống"},
-                {"Sinh tố bơ", 30000, "Đồ uống"}, {"Nước ép cam", 20000, "Đồ uống"},
-                {"Soda chanh", 15000, "Đồ uống"}, {"Nước suối", 10000, "Đồ uống"},
-                {"Trà sữa", 25000, "Đồ uống"}, {"Cà phê đen", 20000, "Đồ uống"},
-                {"Sữa đậu nành", 20000, "Đồ uống"}, {"Nước ép dưa hấu", 25000, "Đồ uống"},
-
-                {"Bánh flan", 20000, "Tráng miệng"}, {"Chè thập cẩm", 30000, "Tráng miệng"},
-                {"Kem vani", 15000, "Tráng miệng"}, {"Bánh ngọt", 25000, "Tráng miệng"},
-                {"Pudding socola", 30000, "Tráng miệng"}, {"Bánh bông lan", 20000, "Tráng miệng"},
-                {"Trà xanh đá xay", 25000, "Tráng miệng"}, {"Kem socola", 20000, "Tráng miệng"},
-                {"Bánh crepe", 25000, "Tráng miệng"}, {"Chè đậu xanh", 20000, "Tráng miệng"},
-
-                {"Xúc xích", 30000, "Khác"}, {"Pizza mini", 35000, "Khác"},
-                {"Hamburger", 40000, "Khác"}, {"Hotdog", 25000, "Khác"},
-                {"Snack khoai tây", 15000, "Khác"}, {"Bắp rang bơ", 20000, "Khác"},
-                {"Mỳ ống sốt cà chua", 35000, "Khác"}, {"Cơm trộn Hàn Quốc", 45000, "Khác"},
-                {"Bánh trứng", 15000, "Khác"}, {"Xôi xoài", 30000, "Khác"}
-        };
-
-        for (Object[] item : items) {
-            String name = (String) item[0];
-            double price = ((Number) item[1]).doubleValue();
-            String category = (String) item[2];
-
-            FirebaseService.getInstance().addMenuItem(
-                    name,
-                    price,
-                    category,
-                    true, // available mặc định
-                    null, // imageUrl
-                    null, // description
-                    ref -> {}, // callback thành công
-                    e -> {
-                        if (getContext() != null) {
-                            Toast.makeText(getContext(), "Lỗi thêm " + name + ": " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    }
-            );
-        }
-
-        if (getContext() != null) {
-            Toast.makeText(getContext(), "Đã gửi yêu cầu thêm 50 món ăn mẫu", Toast.LENGTH_SHORT).show();
-        }
+    private void initViews(View view) {
+        recyclerView = view.findViewById(R.id.recyclerMenu);
+        edtSearch = view.findViewById(R.id.edtSearch);
+        btnClearSearch = view.findViewById(R.id.btnClearSearch);
+        chipGroupCategories = view.findViewById(R.id.chipGroupCategories);
+        tvResultCount = view.findViewById(R.id.tvResultCount);
+        layoutEmpty = view.findViewById(R.id.layoutEmpty);
+        tvEmptyMessage = view.findViewById(R.id.tvEmptyMessage);
     }
 
+    private void setupCategoryChips() {
+        // Add "All" chip first
+        Chip allChip = createCategoryChip("Tất cả", true);
+        chipGroupCategories.addView(allChip);
+
+        // Add category chips
+        for (String category : categories) {
+            Chip chip = createCategoryChip(category, false);
+            chipGroupCategories.addView(chip);
+        }
+
+        chipGroupCategories.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) {
+                // Keep at least one selected
+                allChip.setChecked(true);
+                return;
+            }
+
+            Chip selectedChip = group.findViewById(checkedIds.get(0));
+            if (selectedChip != null) {
+                currentCategory = selectedChip.getText().toString();
+                filterMenu();
+            }
+        });
+    }
+
+    private Chip createCategoryChip(String text, boolean isChecked) {
+        Chip chip = new Chip(getContext());
+        chip.setText(text);
+        chip.setCheckable(true);
+        chip.setChecked(isChecked);
+        chip.setChipBackgroundColorResource(R.color.chip_background_selector);
+        chip.setTextColor(getResources().getColorStateList(R.color.chip_text_selector, null));
+        chip.setChipStrokeWidth(1f);
+        chip.setChipStrokeColorResource(R.color.chip_stroke_selector);
+        return chip;
+    }
+
+    private void setupSearch() {
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentSearchQuery = s.toString().trim();
+                btnClearSearch.setVisibility(currentSearchQuery.isEmpty() ? View.GONE : View.VISIBLE);
+                filterMenu();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        edtSearch.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                filterMenu();
+                return true;
+            }
+            return false;
+        });
+
+        btnClearSearch.setOnClickListener(v -> {
+            edtSearch.setText("");
+            currentSearchQuery = "";
+            filterMenu();
+        });
+    }
+
+    private void setupRecyclerView() {
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        adapter = new AdminMenuAdapter(filteredList, this::showEditMenuDialog);
+        recyclerView.setAdapter(adapter);
+    }
 
     private void loadMenu() {
         FirebaseService.getInstance().listenMenuRealtime((value, error) -> {
@@ -133,8 +175,56 @@ public class AdminMenuFragment extends Fragment {
                     menuList.add(item);
                 }
             }
-            if (adapter != null) adapter.notifyDataSetChanged();
+            filterMenu();
         });
+    }
+
+    private void filterMenu() {
+        filteredList.clear();
+
+        for (MenuItem item : menuList) {
+            boolean matchesCategory = currentCategory.equals("Tất cả") ||
+                    (item.getCategory() != null && item.getCategory().equals(currentCategory));
+
+            boolean matchesSearch = currentSearchQuery.isEmpty() ||
+                    (item.getName() != null && item.getName().toLowerCase().contains(currentSearchQuery.toLowerCase()));
+
+            if (matchesCategory && matchesSearch) {
+                filteredList.add(item);
+            }
+        }
+
+        // Update UI
+        updateResultCount();
+        updateEmptyState();
+
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+    private void updateResultCount() {
+        String categoryText = currentCategory.equals("Tất cả") ? "" : " trong \"" + currentCategory + "\"";
+        String searchText = currentSearchQuery.isEmpty() ? "" : " với từ khóa \"" + currentSearchQuery + "\"";
+        tvResultCount.setText("Đang hiển thị " + filteredList.size() + " món" + categoryText + searchText);
+    }
+
+    private void updateEmptyState() {
+        if (filteredList.isEmpty()) {
+            layoutEmpty.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+
+            if (!currentSearchQuery.isEmpty()) {
+                tvEmptyMessage.setText("Không tìm thấy món ăn\nvới từ khóa \"" + currentSearchQuery + "\"");
+            } else if (!currentCategory.equals("Tất cả")) {
+                tvEmptyMessage.setText("Không có món nào\ntrong danh mục \"" + currentCategory + "\"");
+            } else {
+                tvEmptyMessage.setText("Chưa có món ăn nào\nNhấn + để thêm món mới");
+            }
+        } else {
+            layoutEmpty.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+        }
     }
 
     private void showAddMenuDialog() {

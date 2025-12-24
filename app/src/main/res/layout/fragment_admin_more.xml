@@ -51,6 +51,20 @@
                 style="@style/Widget.Material3.Button.ElevatedButton"/>
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRecipes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📋 Công thức món ăn"
+                android:textAlignment="textStart"
+                android:textColor="#1A2B4C"
+                android:backgroundTint="@color/white"
+                android:layout_marginBottom="8dp"
+                app:icon="@drawable/ic_arrow_right"
+                app:iconGravity="end"
+                app:iconTint="#CCCCCC"
+                style="@style/Widget.Material3.Button.ElevatedButton"/>
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPromotions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
