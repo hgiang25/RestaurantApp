@@ -1,5 +1,6 @@
 package com.example.restaurantapp.adapters;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.restaurantapp.R;
+import com.example.restaurantapp.models.OrderItem;
 import com.example.restaurantapp.models.OrderModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -16,7 +18,6 @@ import com.google.android.material.chip.Chip;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
 
@@ -24,8 +25,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         void onOrderClick(OrderModel order);
     }
 
-    private List<OrderModel> orderList;
-    private OnOrderClickListener listener;
+    private final List<OrderModel> orderList;
+    private final OnOrderClickListener listener;
 
     public OrderAdapter(List<OrderModel> orderList, OnOrderClickListener listener) {
         this.orderList = orderList;
@@ -42,8 +43,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
     @Override
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
-        OrderModel order = orderList.get(position);
-        holder.bind(order);
+        holder.bind(orderList.get(position));
     }
 
     @Override
@@ -52,6 +52,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     }
 
     class OrderViewHolder extends RecyclerView.ViewHolder {
+
         TextView txtOrderId, txtOrderItems, txtOrderTime;
         Chip chipStatus;
         MaterialButton btnUpdateStatus;
@@ -66,62 +67,95 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         }
 
         void bind(OrderModel order) {
-            txtOrderId.setText("Đơn #" + order.getId().substring(0, Math.min(8, order.getId().length())));
 
-            // Hiển thị items
+            // ===== ORDER ID =====
+            if (order.getId() != null) {
+                txtOrderId.setText("Đơn #" + order.getId()
+                        .substring(0, Math.min(8, order.getId().length())));
+            }
+
+            // ===== ORDER ITEMS (FIX CHẮC CHẮN HIỆN TÊN MÓN) =====
             StringBuilder itemsText = new StringBuilder();
+
             if (order.getItems() != null) {
-                for (Object item : order.getItems()) {
-                    if (item instanceof Map) {
-                        Map<String, Object> itemMap = (Map<String, Object>) item;
-                        String name = (String) itemMap.get("name");
-                        Object qtyObj = itemMap.get("quantity");
-                        int qty = qtyObj instanceof Number ? ((Number) qtyObj).intValue() : 1;
+                for (Object obj : order.getItems()) {
+
+                    // Trường hợp map đúng OrderItem
+                    if (obj instanceof OrderItem) {
+                        OrderItem item = (OrderItem) obj;
+                        if (item.getName() != null) {
+                            itemsText.append(item.getName())
+                                    .append(" x")
+                                    .append(item.getQuantity())
+                                    .append("\n");
+                        }
+                    }
+
+                    // Trường hợp Firestore trả raw Map (GIỐNG CustomerOrderAdapter)
+                    else if (obj instanceof java.util.Map) {
+                        java.util.Map<String, Object> map =
+                                (java.util.Map<String, Object>) obj;
+
+                        String name = (String) map.get("name");
+                        Object qtyObj = map.get("quantity");
+                        int qty = qtyObj instanceof Number
+                                ? ((Number) qtyObj).intValue()
+                                : 1;
+
                         if (name != null) {
-                            itemsText.append(name).append(" x").append(qty).append("\n");
+                            itemsText.append(name)
+                                    .append(" x")
+                                    .append(qty)
+                                    .append("\n");
                         }
                     }
                 }
             }
-            txtOrderItems.setText(itemsText.toString().trim());
 
-            // Hiển thị thời gian
+            txtOrderItems.setText(
+                    itemsText.length() > 0
+                            ? itemsText.toString().trim()
+                            : "Không có món"
+            );
+
+
+            // ===== TIME =====
             if (order.getCreatedAt() != null) {
-                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm dd/MM", Locale.getDefault());
+                SimpleDateFormat sdf =
+                        new SimpleDateFormat("HH:mm dd/MM", Locale.getDefault());
                 txtOrderTime.setText(sdf.format(order.getCreatedAt().toDate()));
             }
 
-            // Hiển thị status
-            String statusText;
-            int statusColor;
+            // ===== STATUS =====
+            chipStatus.setText(order.getStatusDisplay());
+
+            int color;
             switch (order.getStatus()) {
                 case "pending":
-                    statusText = "Chờ xác nhận";
-                    statusColor = 0xFFFF9800;
+                    color = 0xFFFF9800;
                     break;
                 case "confirmed":
-                    statusText = "Đã xác nhận";
-                    statusColor = 0xFF2196F3;
+                    color = 0xFF2196F3;
                     break;
                 case "preparing":
-                    statusText = "Đang chuẩn bị";
-                    statusColor = 0xFF9C27B0;
+                    color = 0xFF9C27B0;
                     break;
                 case "served":
-                    statusText = "Đã phục vụ";
-                    statusColor = 0xFF4CAF50;
+                    color = 0xFF4CAF50;
                     break;
                 case "paid":
-                    statusText = "Đã thanh toán";
-                    statusColor = 0xFF607D8B;
+                    color = 0xFF607D8B;
+                    break;
+                case "cancelled":
+                    color = 0xFFF44336;
                     break;
                 default:
-                    statusText = order.getStatus();
-                    statusColor = 0xFF9E9E9E;
+                    color = 0xFF9E9E9E;
             }
-            chipStatus.setText(statusText);
-            chipStatus.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(statusColor));
 
+            chipStatus.setChipBackgroundColor(ColorStateList.valueOf(color));
+
+            // ===== CLICK =====
             btnUpdateStatus.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onOrderClick(order);

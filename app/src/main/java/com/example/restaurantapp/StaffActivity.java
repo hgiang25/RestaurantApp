@@ -19,6 +19,7 @@ import com.example.restaurantapp.utils.LocaleHelper;
 import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.example.restaurantapp.fragments.staff.StaffTimesheetFragment;
 
 public class StaffActivity extends AppCompatActivity {
 
@@ -33,7 +34,7 @@ public class StaffActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         PreferenceManager prefs = new PreferenceManager(this);
         prefs.applySavedSettings();
-        
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_staff);
 
@@ -52,18 +53,26 @@ public class StaffActivity extends AppCompatActivity {
 
                 if (itemId == R.id.nav_tables) {
                     fragment = new StaffTablesFragment();
+
+                } else if (itemId == R.id.nav_timesheet) {
+                    fragment = new StaffTimesheetFragment(); // 🔥 CHẤM CÔNG
+
                 } else if (itemId == R.id.nav_reservations) {
                     fragment = new StaffReservationsFragment();
+
                 } else if (itemId == R.id.nav_orders) {
                     fragment = new StaffOrdersFragment();
+
                 } else if (itemId == R.id.nav_notifications) {
                     fragment = new StaffNotificationsFragment();
+
                 } else if (itemId == R.id.nav_logout) {
                     FirebaseService.getInstance().logout();
                     startActivity(new Intent(StaffActivity.this, LoginActivity.class));
                     finish();
                     return true;
                 }
+
 
                 if (fragment != null) {
                     loadFragment(fragment);
