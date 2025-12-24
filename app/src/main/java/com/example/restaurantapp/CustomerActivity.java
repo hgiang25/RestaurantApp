@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.authentication.LoginActivity;
 import com.example.restaurantapp.fragments.customer.CustomerMenuFragment;
+import com.example.restaurantapp.fragments.customer.CustomerChatFragment;
 import com.example.restaurantapp.fragments.customer.CustomerNotificationsFragment;
 import com.example.restaurantapp.fragments.customer.CustomerOrdersFragment;
 import com.example.restaurantapp.fragments.customer.CustomerProfileFragment;
@@ -19,11 +20,14 @@ import com.example.restaurantapp.fragments.customer.CustomerReservationFragment;
 import com.example.restaurantapp.utils.LocaleHelper;
 import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationBarView;
 
 public class CustomerActivity extends AppCompatActivity {
 
     BottomNavigationView bottomNav;
+    FloatingActionButton fabChat;
+    private boolean isChatOpen = false;
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -40,15 +44,40 @@ public class CustomerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_customer);
 
         bottomNav = findViewById(R.id.bottomNav);
+        fabChat = findViewById(R.id.fabChat);
 
         // Load fragment mặc định
         if (savedInstanceState == null) {
             loadFragment(new CustomerMenuFragment());
         }
 
+        // FAB Chat click listener
+        fabChat.setOnClickListener(v -> {
+            if (!isChatOpen) {
+                // Mở Chat
+                loadFragment(new CustomerChatFragment());
+                fabChat.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+                isChatOpen = true;
+                bottomNav.setVisibility(android.view.View.GONE);
+            } else {
+                // Đóng Chat, quay lại Menu
+                loadFragment(new CustomerMenuFragment());
+                fabChat.setImageResource(R.drawable.ic_chat_bot);
+                isChatOpen = false;
+                bottomNav.setVisibility(android.view.View.VISIBLE);
+                bottomNav.setSelectedItemId(R.id.nav_menu);
+            }
+        });
+
         bottomNav.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                // Reset chat state khi chọn tab khác
+                if (isChatOpen) {
+                    fabChat.setImageResource(R.drawable.ic_chat_bot);
+                    isChatOpen = false;
+                }
+                
                 Fragment fragment = null;
                 int itemId = item.getItemId();
 
@@ -71,6 +100,16 @@ public class CustomerActivity extends AppCompatActivity {
                 return false;
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isChatOpen) {
+            // Đóng chat khi nhấn back
+            fabChat.performClick();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     private void loadFragment(Fragment fragment) {
