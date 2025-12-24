@@ -11,6 +11,21 @@
         android:layout_height="match_parent"
         android:paddingBottom="56dp" />
 
+    <!-- FAB Chat Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabChat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="72dp"
+        android:contentDescription="Trợ lý AI"
+        app:srcCompat="@drawable/ic_chat_bot"
+        app:fabSize="normal"
+        app:backgroundTint="@color/primary"
+        app:tint="@color/white"
+        app:elevation="8dp"/>
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"

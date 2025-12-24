@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingVertical="4dp">
+
+    <!-- Bot Message (Left) -->
+    <LinearLayout
+        android:id="@+id/layoutBotMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:orientation="horizontal"
+        android:maxWidth="300dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:text="🤖"
+            android:textSize="20sp"
+            android:gravity="center"
+            android:background="@drawable/bg_circle"
+            android:layout_marginEnd="8dp"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvBotMessageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Xin chào! Tôi có thể giúp gì cho bạn?"
+                android:textSize="15sp"
+                android:textColor="@color/text_primary"
+                android:padding="12dp"
+                android:background="@drawable/bg_chat_bot"
+                android:lineSpacingMultiplier="1.3"/>
+
+            <TextView
+                android:id="@+id/tvBotMessageTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10:30"
+                android:textSize="11sp"
+                android:textColor="@color/text_hint"
+                android:layout_marginTop="4dp"
+                android:layout_marginStart="4dp"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- User Message (Right) -->
+    <LinearLayout
+        android:id="@+id/layoutUserMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:orientation="vertical"
+        android:maxWidth="280dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvUserMessageText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cho tôi xem thực đơn"
+            android:textSize="15sp"
+            android:textColor="@color/white"
+            android:padding="12dp"
+            android:background="@drawable/bg_chat_user"
+            android:lineSpacingMultiplier="1.3"/>
+
+        <TextView
+            android:id="@+id/tvUserMessageTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="10:30"
+            android:textSize="11sp"
+            android:textColor="@color/text_hint"
+            android:layout_marginTop="4dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="4dp"/>
+
+    </LinearLayout>
+
+</FrameLayout>
