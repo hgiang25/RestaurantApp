@@ -124,6 +124,12 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
                 }
             }
             
+            // Sort by createdAt descending (newest first) - do at client since no index
+            allOrders.sort((o1, o2) -> {
+                if (o1.getCreatedAt() == null || o2.getCreatedAt() == null) return 0;
+                return o2.getCreatedAt().compareTo(o1.getCreatedAt());
+            });
+            
             filterOrders();
         });
     }

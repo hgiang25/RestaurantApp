@@ -16,6 +16,8 @@ import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.utils.LocaleHelper;
 import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.MetadataChanges;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
@@ -27,6 +29,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
     private TextView txtEmpty;
     private OrderHistoryAdapter adapter;
     private List<DocumentSnapshot> orderList = new ArrayList<>();
+    private ListenerRegistration ordersListener;
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -62,11 +65,11 @@ public class OrderHistoryActivity extends AppCompatActivity {
         String userId = FirebaseService.getInstance().getCurrentUserId();
         if (userId == null) return;
 
-        FirebaseService.getInstance().getDb()
+        ordersListener = FirebaseService.getInstance().getDb()
                 .collection("orders")
                 .whereEqualTo("customerId", userId)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
-                .addSnapshotListener((value, error) -> {
+                .addSnapshotListener(MetadataChanges.INCLUDE, (value, error) -> {
                     if (error != null || value == null) return;
 
                     orderList.clear();
@@ -81,5 +84,13 @@ public class OrderHistoryActivity extends AppCompatActivity {
                         recyclerOrders.setVisibility(View.VISIBLE);
                     }
                 });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (ordersListener != null) {
+            ordersListener.remove();
+        }
     }
 }

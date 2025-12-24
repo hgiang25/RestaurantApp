@@ -1,6 +1,7 @@
 package com.example.restaurantapp.fragments.customer;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,16 +18,19 @@ import com.example.restaurantapp.adapters.CustomerOrderAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.OrderModel;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CustomerOrdersFragment extends Fragment {
 
+    private static final String TAG = "CustomerOrders";
     private RecyclerView recyclerView;
     private TextView txtEmpty;
     private CustomerOrderAdapter adapter;
     private List<OrderModel> orderList = new ArrayList<>();
+    private ListenerRegistration ordersListener;
 
     @Nullable
     @Override
@@ -47,10 +51,35 @@ public class CustomerOrdersFragment extends Fragment {
 
     private void loadOrders() {
         String customerId = FirebaseService.getInstance().getCurrentUserId();
-        if (customerId == null) return;
+        if (customerId == null) {
+            Log.e(TAG, "customerId is null!");
+            return;
+        }
 
-        FirebaseService.getInstance().listenOrdersByCustomerRealtime(customerId, (value, error) -> {
-            if (error != null || value == null) return;
+        // Hủy listener cũ nếu có
+        if (ordersListener != null) {
+            ordersListener.remove();
+        }
+
+        Log.d(TAG, "Bắt đầu listen orders cho customer: " + customerId);
+
+        ordersListener = FirebaseService.getInstance().listenOrdersByCustomerRealtime(customerId, (value, error) -> {
+            if (error != null) {
+                Log.e(TAG, "Lỗi listen orders: " + error.getMessage());
+                return;
+            }
+            if (value == null) {
+                Log.w(TAG, "Value is null");
+                return;
+            }
+            if (!isAdded()) {
+                Log.w(TAG, "Fragment not attached");
+                return;
+            }
+
+            // Log metadata để biết data từ cache hay server
+            boolean fromCache = value.getMetadata().isFromCache();
+            Log.d(TAG, "Nhận " + value.size() + " orders (fromCache: " + fromCache + ")");
 
             orderList.clear();
             for (DocumentSnapshot doc : value.getDocuments()) {
@@ -58,6 +87,7 @@ public class CustomerOrdersFragment extends Fragment {
                 if (order != null) {
                     order.setId(doc.getId());
                     orderList.add(order);
+                    Log.d(TAG, "Order: " + doc.getId() + " - Status: " + order.getStatus());
                 }
             }
 
@@ -77,5 +107,14 @@ public class CustomerOrdersFragment extends Fragment {
 
             adapter.notifyDataSetChanged();
         });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (ordersListener != null) {
+            ordersListener.remove();
+            ordersListener = null;
+        }
     }
 }

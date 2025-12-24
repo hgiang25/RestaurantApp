@@ -259,15 +259,15 @@ public class FirebaseService {
     }
 
     public ListenerRegistration listenOrdersByCustomerRealtime(String customerId, EventListener<QuerySnapshot> listener) {
-        return db.collection("orders").whereEqualTo("customerId", customerId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .addSnapshotListener(listener);
+        // Bỏ orderBy để không cần composite index - sort ở client side
+        return db.collection("orders")
+                .whereEqualTo("customerId", customerId)
+                .addSnapshotListener(MetadataChanges.INCLUDE, listener);
     }
 
     public ListenerRegistration listenOrdersRealtime(EventListener<QuerySnapshot> listener) {
         return db.collection("orders")
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .addSnapshotListener(listener);
+                .addSnapshotListener(MetadataChanges.INCLUDE, listener);
     }
 
     /** =================== REVIEWS =================== */
