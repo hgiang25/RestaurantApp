@@ -721,4 +721,128 @@ public class FirebaseService {
                 .whereEqualTo("status", "free")
                 .addSnapshotListener(listener);
     }
+
+    /** =================== RECIPES =================== */
+    
+    /**
+     * Thêm công thức mới
+     */
+    public void addRecipe(Map<String, Object> recipeData,
+                          OnSuccessListener<DocumentReference> success,
+                          OnFailureListener fail) {
+        recipeData.put("createdAt", Timestamp.now());
+        db.collection("recipes").add(recipeData)
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    /**
+     * Cập nhật công thức
+     */
+    public void updateRecipe(String recipeId, Map<String, Object> updates,
+                             OnSuccessListener<Void> success, OnFailureListener fail) {
+        updates.put("updatedAt", Timestamp.now());
+        db.collection("recipes").document(recipeId)
+                .update(updates)
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    /**
+     * Xóa công thức
+     */
+    public void deleteRecipe(String recipeId,
+                             OnSuccessListener<Void> success,
+                             OnFailureListener fail) {
+        db.collection("recipes").document(recipeId)
+                .delete()
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    /**
+     * Lắng nghe realtime danh sách công thức
+     */
+    public ListenerRegistration listenRecipesRealtime(EventListener<QuerySnapshot> listener) {
+        return db.collection("recipes").addSnapshotListener(listener);
+    }
+
+    /**
+     * Lấy công thức theo menu item ID
+     */
+    public void getRecipeByMenuItemId(String menuItemId,
+                                      OnSuccessListener<QuerySnapshot> success,
+                                      OnFailureListener fail) {
+        db.collection("recipes")
+                .whereEqualTo("menuItemId", menuItemId)
+                .get()
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    /**
+     * Cập nhật trạng thái món ăn dựa trên nguyên liệu
+     * Gọi method này khi cần đồng bộ hàng loạt
+     */
+    public void updateMenuItemAvailability(String menuItemId, boolean available,
+                                           OnSuccessListener<Void> success,
+                                           OnFailureListener fail) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("available", available);
+        updates.put("lastStockCheck", Timestamp.now());
+        
+        db.collection("menu").document(menuItemId)
+                .update(updates)
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    /**
+     * Trừ nguyên liệu khi đơn hàng được xác nhận
+     * Dựa trên công thức của từng món
+     */
+    public void deductIngredientsFromRecipe(String menuItemId, int quantity,
+                                            OnSuccessListener<Void> success,
+                                            OnFailureListener fail) {
+        getRecipeByMenuItemId(menuItemId,
+                querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        success.onSuccess(null); // Không có công thức thì bỏ qua
+                        return;
+                    }
+
+                    DocumentSnapshot recipeDoc = querySnapshot.getDocuments().get(0);
+                    List<Map<String, Object>> ingredients = 
+                            (List<Map<String, Object>>) recipeDoc.get("ingredients");
+                    
+                    if (ingredients == null || ingredients.isEmpty()) {
+                        success.onSuccess(null);
+                        return;
+                    }
+
+                    WriteBatch batch = db.batch();
+                    
+                    for (Map<String, Object> ing : ingredients) {
+                        String ingId = (String) ing.get("ingredientId");
+                        Object qtyObj = ing.get("quantityRequired");
+                        double qtyRequired = 0;
+                        if (qtyObj instanceof Double) {
+                            qtyRequired = (Double) qtyObj;
+                        } else if (qtyObj instanceof Long) {
+                            qtyRequired = ((Long) qtyObj).doubleValue();
+                        }
+                        
+                        double totalDeduct = qtyRequired * quantity;
+                        
+                        DocumentReference stockRef = db.collection("inventory").document(ingId);
+                        batch.update(stockRef, "quantity", FieldValue.increment(-totalDeduct));
+                    }
+
+                    batch.commit()
+                            .addOnSuccessListener(success)
+                            .addOnFailureListener(fail);
+                },
+                fail
+        );
+    }
 }
