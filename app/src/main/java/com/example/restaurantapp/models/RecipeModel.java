@@ -3,6 +3,8 @@ package com.example.restaurantapp.models;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.util.Log;
+
 public class RecipeModel {
     private String id;
     private String menuItemId;      // ID món ăn
@@ -30,8 +32,8 @@ public class RecipeModel {
     public void setMenuItemName(String menuItemName) { this.menuItemName = menuItemName; }
 
     public List<RecipeIngredient> getIngredients() { return ingredients; }
-    public void setIngredients(List<RecipeIngredient> ingredients) { 
-        this.ingredients = ingredients != null ? ingredients : new ArrayList<>(); 
+    public void setIngredients(List<RecipeIngredient> ingredients) {
+        this.ingredients = ingredients != null ? ingredients : new ArrayList<>();
     }
 
     /**
@@ -41,26 +43,46 @@ public class RecipeModel {
      */
     public boolean hasEnoughIngredients(List<InventoryModel> inventoryList) {
         if (ingredients == null || ingredients.isEmpty()) {
-            return true; // Món không có công thức thì mặc định là có thể làm
+            Log.d("RecipeCheck", "Recipe " + menuItemName + " has no ingredients");
+            return false;
+        }
+        if (inventoryList == null || inventoryList.isEmpty()) {
+            Log.d("RecipeCheck", "Inventory list is empty");
+            return false;
         }
 
-        for (RecipeIngredient recipeIng : ingredients) {
-            boolean found = false;
+        for (RecipeIngredient ing : ingredients) {
+            InventoryModel stock = null;
+
+            // 🔑 MATCH THEO INVENTORY ID
             for (InventoryModel inv : inventoryList) {
-                if (inv.getId().equals(recipeIng.getIngredientId())) {
-                    found = true;
-                    if (inv.getQuantity() < recipeIng.getQuantityRequired()) {
-                        return false; // Không đủ số lượng
-                    }
+                if (inv.getId() != null && inv.getId().equals(ing.getIngredientId())) {
+                    stock = inv;
                     break;
                 }
             }
-            if (!found) {
-                return false; // Không tìm thấy nguyên liệu trong kho
+
+            // ❌ Không có trong kho
+            if (stock == null) {
+                Log.d("RecipeCheck", "Missing stock for " + ing.getIngredientName() + " (ID: " + ing.getIngredientId() + ")");
+                return false;
+            }
+
+            if (!stock.getUnit().equals(ing.getUnit())) {
+                Log.w("RecipeCheck", "Unit mismatch for " + ing.getIngredientName() + ": recipe=" + ing.getUnit() + ", stock=" + stock.getUnit());
+                // Có thể thêm convert unit ở đây nếu cần, ví dụ if "kg" và "g" thì multiply 1000
+            }
+
+            // ❌ Không đủ số lượng
+            if (stock.getQuantity() < ing.getQuantityRequired()) {
+                Log.d("RecipeCheck", "Insufficient for " + ing.getIngredientName() + ": stock=" + stock.getQuantity() + ", required=" + ing.getQuantityRequired());
+                return false;
             }
         }
+
         return true;
     }
+
 
     /**
      * Lấy danh sách các nguyên liệu đang thiếu
@@ -69,29 +91,40 @@ public class RecipeModel {
      */
     public List<String> getMissingIngredients(List<InventoryModel> inventoryList) {
         List<String> missing = new ArrayList<>();
-        
-        if (ingredients == null || ingredients.isEmpty()) {
-            return missing;
-        }
 
-        for (RecipeIngredient recipeIng : ingredients) {
-            boolean found = false;
+        if (ingredients == null || ingredients.isEmpty()) return missing;
+
+        for (RecipeIngredient ing : ingredients) {
+
+            InventoryModel stock = null;
+
             for (InventoryModel inv : inventoryList) {
-                if (inv.getId().equals(recipeIng.getIngredientId())) {
-                    found = true;
-                    if (inv.getQuantity() < recipeIng.getQuantityRequired()) {
-                        missing.add(recipeIng.getIngredientName() + " (cần: " + 
-                                recipeIng.getQuantityRequired() + ", có: " + inv.getQuantity() + ")");
-                    }
+                if (inv.getId() != null && inv.getId().equals(ing.getIngredientId())) {
+                    stock = inv;
                     break;
                 }
             }
-            if (!found) {
-                missing.add(recipeIng.getIngredientName() + " (không có trong kho)");
+
+            // ❌ Không tồn tại trong kho
+            if (stock == null) {
+                missing.add(ing.getIngredientName() + " (không có trong kho)");
+                continue;
+            }
+
+            // ❌ Không đủ số lượng
+            if (stock.getQuantity() < ing.getQuantityRequired()) {
+                missing.add(
+                        ing.getIngredientName()
+                                + " (thiếu "
+                                + (ing.getQuantityRequired() - stock.getQuantity())
+                                + " " + ing.getUnit() + ")"
+                );
             }
         }
+
         return missing;
     }
+
 
     /**
      * Inner class: Nguyên liệu trong công thức
@@ -104,7 +137,7 @@ public class RecipeModel {
 
         public RecipeIngredient() {}
 
-        public RecipeIngredient(String ingredientId, String ingredientName, 
+        public RecipeIngredient(String ingredientId, String ingredientName,
                                 double quantityRequired, String unit) {
             this.ingredientId = ingredientId;
             this.ingredientName = ingredientName;
