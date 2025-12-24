@@ -81,6 +81,44 @@
 
         </LinearLayout>
 
+        <!-- Payment button - only visible when order is served -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPayment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="💳 Thanh toán"
+            android:visibility="gone"
+            style="@style/Widget.MaterialComponents.Button"/>
+
+        <!-- Payment status info -->
+        <LinearLayout
+            android:id="@+id/layoutPaymentStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/txtPaymentMethod"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="12sp"
+                android:textColor="#666"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPaymentStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:textColor="@color/white"
+                app:chipMinHeight="24dp"/>
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

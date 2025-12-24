@@ -2,6 +2,8 @@ package com.example.restaurantapp.fragments.customer;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,10 +43,12 @@ public class CustomerMenuFragment extends Fragment {
 
     private RecyclerView recyclerView;
     private ChipGroup chipGroupCategories;
+    private EditText edtSearch;
     private MenuAdapter adapter;
     private List<MenuItem> menuList = new ArrayList<>();
     private List<MenuItem> filteredList = new ArrayList<>();
     private String selectedCategory = "Tất cả";
+    private String currentSearchQuery = "";
 
     // Giỏ hàng
     private Map<String, Integer> cart = new HashMap<>();
@@ -66,10 +70,13 @@ public class CustomerMenuFragment extends Fragment {
 
         recyclerView = view.findViewById(R.id.recyclerMenu);
         chipGroupCategories = view.findViewById(R.id.chipGroupCategories);
+        edtSearch = view.findViewById(R.id.edtSearch);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new MenuAdapter(filteredList, this::onAddToCart);
         recyclerView.setAdapter(adapter);
+
+        setupSearch();
 
         view.findViewById(R.id.fabCart).setOnClickListener(v -> showCartDialog());
 
@@ -105,7 +112,23 @@ public class CustomerMenuFragment extends Fragment {
             }
 
             setupCategoryChips(categories);
-            filterByCategory();
+            filterMenu();
+        });
+    }
+
+    private void setupSearch() {
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentSearchQuery = s.toString().trim().toLowerCase();
+                filterMenu();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
     }
 
@@ -118,24 +141,34 @@ public class CustomerMenuFragment extends Fragment {
             chip.setChecked(category.equals(selectedCategory));
             chip.setOnClickListener(v -> {
                 selectedCategory = category;
-                filterByCategory();
+                filterMenu();
             });
             chipGroupCategories.addView(chip);
         }
     }
 
-    private void filterByCategory() {
+    private void filterMenu() {
         filteredList.clear();
-        if (selectedCategory.equals("Tất cả")) {
-            filteredList.addAll(menuList);
-        } else {
-            for (MenuItem item : menuList) {
-                if (item.getCategory().equals(selectedCategory)) {
-                    filteredList.add(item);
-                }
+        
+        for (MenuItem item : menuList) {
+            // Filter by category
+            boolean matchesCategory = selectedCategory.equals("Tất cả") ||
+                    (item.getCategory() != null && item.getCategory().equals(selectedCategory));
+            
+            // Filter by search query
+            boolean matchesSearch = currentSearchQuery.isEmpty() ||
+                    (item.getName() != null && item.getName().toLowerCase().contains(currentSearchQuery));
+            
+            if (matchesCategory && matchesSearch) {
+                filteredList.add(item);
             }
         }
+        
         adapter.notifyDataSetChanged();
+    }
+
+    private void filterByCategory() {
+        filterMenu();
     }
 
     private void onAddToCart(MenuItem item) {

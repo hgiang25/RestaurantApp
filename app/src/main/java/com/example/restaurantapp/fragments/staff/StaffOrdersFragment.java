@@ -120,6 +120,13 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
                 OrderModel order = doc.toObject(OrderModel.class);
                 if (order != null) {
                     order.setId(doc.getId());
+                    
+                    // Fix: Lấy items trực tiếp từ document vì toObject không map đúng List<Map>
+                    Object itemsObj = doc.get("items");
+                    if (itemsObj instanceof List) {
+                        order.setRawItems((List<?>) itemsObj);
+                    }
+                    
                     allOrders.add(order);
                 }
             }
@@ -190,12 +197,43 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
         android.util.Log.d("StaffOrders", "=== onPreparing ĐƯỢC GỌI ===");
         android.util.Log.d("StaffOrders", "Order ID: " + order.getId());
         android.util.Log.d("StaffOrders", "Order status: " + order.getStatus());
-        Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
         
-        // Khi bắt đầu chuẩn bị, trừ nguyên liệu từ kho
-        deductIngredientsForOrder(order, () -> {
-            updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
-        });
+        List<?> items = order.getItemsForDisplay();
+        
+        // Kiểm tra nguyên liệu trước khi chuẩn bị
+        FirebaseService.getInstance().checkIngredientsAvailability(items,
+                missingList -> {
+                    if (missingList != null && !missingList.isEmpty()) {
+                        // Thiếu nguyên liệu - hiển thị cảnh báo
+                        StringBuilder message = new StringBuilder();
+                        message.append("Không đủ nguyên liệu để chuẩn bị đơn hàng:\n\n");
+                        for (String missing : missingList) {
+                            message.append("• ").append(missing).append("\n");
+                        }
+                        message.append("\nVui lòng báo Admin nhập thêm nguyên liệu!");
+
+                        new AlertDialog.Builder(requireContext())
+                                .setTitle("⚠️ Thiếu nguyên liệu")
+                                .setMessage(message.toString())
+                                .setPositiveButton("Đóng", null)
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .show();
+                    } else {
+                        // Đủ nguyên liệu - tiến hành trừ kho
+                        Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
+                        deductIngredientsForOrder(order, () -> {
+                            updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
+                        });
+                    }
+                },
+                e -> {
+                    android.util.Log.e("StaffOrders", "Lỗi kiểm tra nguyên liệu: " + e.getMessage());
+                    // Nếu lỗi kiểm tra, vẫn cho phép chuẩn bị (để không block)
+                    Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
+                    deductIngredientsForOrder(order, () -> {
+                        updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
+                    });
+                });
     }
 
     @Override
@@ -205,16 +243,52 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
     @Override
     public void onPaid(OrderModel order) {
+        // Kiểm tra xem khách đã yêu cầu thanh toán chưa
+        String paymentStatus = order.getPaymentStatus();
+        String paymentMethod = order.getPaymentMethod();
+        
+        String methodText = "Tiền mặt";
+        if (paymentMethod != null) {
+            switch (paymentMethod) {
+                case "cash": methodText = "Tiền mặt"; break;
+                case "bank_transfer": methodText = "Chuyển khoản"; break;
+                case "e_wallet": methodText = "Ví điện tử"; break;
+                case "card": methodText = "Thẻ"; break;
+            }
+        }
+        
+        String message;
+        if ("pending".equals(paymentStatus)) {
+            message = "Khách yêu cầu thanh toán " + 
+                    String.format(Locale.getDefault(), "%,.0fđ", order.getTotal() != null ? order.getTotal() : 0) + 
+                    "\n\nPhương thức: " + methodText;
+            if (order.getPaymentNote() != null && !order.getPaymentNote().isEmpty()) {
+                message += "\nGhi chú: " + order.getPaymentNote();
+            }
+        } else {
+            message = "Khách đã thanh toán " + 
+                    String.format(Locale.getDefault(), "%,.0fđ", order.getTotal() != null ? order.getTotal() : 0) + "?";
+        }
+        
         new AlertDialog.Builder(requireContext())
                 .setTitle("Xác nhận thanh toán")
-                .setMessage("Khách đã thanh toán " + 
-                        String.format(Locale.getDefault(), "%,.0fđ", order.getTotal() != null ? order.getTotal() : 0) + "?")
+                .setMessage(message)
                 .setPositiveButton("Đã thanh toán", (dialog, which) -> {
-                    updateOrderStatus(order.getId(), "paid", "Đã thanh toán");
-                    
-                    // Update loyalty points for customer
-                    if (order.getTotal() != null && order.getCustomerId() != null) {
-                        updateLoyaltyPoints(order.getCustomerId(), order.getTotal());
+                    // Sử dụng confirmPayment nếu khách đã gọi thanh toán
+                    if ("pending".equals(paymentStatus)) {
+                        FirebaseService.getInstance().confirmPayment(order.getId(),
+                                aVoid -> {
+                                    Toast.makeText(getContext(), "Đã xác nhận thanh toán", Toast.LENGTH_SHORT).show();
+                                    if (order.getTotal() != null && order.getCustomerId() != null) {
+                                        updateLoyaltyPoints(order.getCustomerId(), order.getTotal());
+                                    }
+                                },
+                                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    } else {
+                        updateOrderStatus(order.getId(), "paid", "Đã thanh toán");
+                        if (order.getTotal() != null && order.getCustomerId() != null) {
+                            updateLoyaltyPoints(order.getCustomerId(), order.getTotal());
+                        }
                     }
                 })
                 .setNegativeButton("Hủy", null)
@@ -223,14 +297,51 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
     @Override
     public void onCancel(OrderModel order) {
+        // Tạo input để nhập lý do hủy
+        android.widget.EditText inputReason = new android.widget.EditText(requireContext());
+        inputReason.setHint("Nhập lý do hủy (không bắt buộc)");
+        inputReason.setPadding(48, 32, 48, 16);
+        
+        String status = order.getStatus();
+        String warningMessage = "";
+        
+        if ("preparing".equals(status)) {
+            warningMessage = "⚠️ Đơn hàng đang được chuẩn bị!\nNguyên liệu đã trừ sẽ không được hoàn lại.\n\n";
+        }
+        
         new AlertDialog.Builder(requireContext())
-                .setTitle("Hủy đơn hàng")
-                .setMessage("Bạn có chắc muốn hủy đơn hàng này?")
+                .setTitle("🚫 Hủy đơn hàng")
+                .setMessage(warningMessage + "Bạn có chắc muốn hủy đơn #" + 
+                        order.getId().substring(0, Math.min(8, order.getId().length())).toUpperCase() + "?")
+                .setView(inputReason)
                 .setPositiveButton("Hủy đơn", (dialog, which) -> {
-                    updateOrderStatus(order.getId(), "cancelled", "Đã hủy đơn hàng");
+                    String reason = inputReason.getText().toString().trim();
+                    cancelOrder(order.getId(), reason);
                 })
                 .setNegativeButton("Không", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
+    }
+    
+    private void cancelOrder(String orderId, String reason) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "cancelled");
+        updates.put("updatedAt", System.currentTimeMillis());
+        updates.put("cancelledAt", System.currentTimeMillis());
+        if (reason != null && !reason.isEmpty()) {
+            updates.put("cancelReason", reason);
+        }
+        
+        FirebaseService.getInstance().getDb()
+                .collection("orders")
+                .document(orderId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getContext(), "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     @Override
@@ -277,17 +388,10 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
      * Dựa trên công thức của từng món trong đơn
      */
     private void deductIngredientsForOrder(OrderModel order, Runnable onComplete) {
-        // Lấy items - có thể là List<OrderItem> hoặc List<Map>
-        Object itemsObj = order.getItems();
-        if (itemsObj == null) {
+        // Lấy items - ưu tiên rawItems từ Firestore
+        List<?> items = order.getItemsForDisplay();
+        if (items == null || items.isEmpty()) {
             android.util.Log.d("StaffOrders", "Đơn hàng không có items");
-            onComplete.run();
-            return;
-        }
-
-        List<?> items = (List<?>) itemsObj;
-        if (items.isEmpty()) {
-            android.util.Log.d("StaffOrders", "Đơn hàng items rỗng");
             onComplete.run();
             return;
         }

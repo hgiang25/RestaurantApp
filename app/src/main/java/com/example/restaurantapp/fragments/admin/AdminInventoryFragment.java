@@ -20,6 +20,7 @@ import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.InventoryModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ public class AdminInventoryFragment extends Fragment {
     private InventoryAdapter adapter;
     private List<InventoryModel> inventoryList = new ArrayList<>();
     private FloatingActionButton fabAdd;
+    private ListenerRegistration inventoryListener;
 
     @Nullable
     @Override
@@ -53,9 +55,22 @@ public class AdminInventoryFragment extends Fragment {
     }
 
     private void loadInventory() {
-        FirebaseService.getInstance().listenInventoryRealtime((value, error) -> {
+        // Hủy listener cũ nếu có
+        if (inventoryListener != null) {
+            inventoryListener.remove();
+        }
+        
+        inventoryListener = FirebaseService.getInstance().listenInventoryRealtime((value, error) -> {
             if (!isAdded() || getContext() == null) return;
-            if (error != null || value == null) return;
+            if (error != null) {
+                android.util.Log.e("AdminInventory", "Lỗi load inventory: " + error.getMessage());
+                return;
+            }
+            if (value == null) return;
+            
+            // Log để debug
+            boolean fromCache = value.getMetadata().isFromCache();
+            android.util.Log.d("AdminInventory", "Nhận " + value.size() + " items (fromCache: " + fromCache + ")");
 
             inventoryList.clear();
             for (DocumentSnapshot doc : value.getDocuments()) {
@@ -63,10 +78,20 @@ public class AdminInventoryFragment extends Fragment {
                 if (item != null) {
                     item.setId(doc.getId());
                     inventoryList.add(item);
+                    android.util.Log.d("AdminInventory", "Item: " + item.getName() + " - Qty: " + item.getQuantity());
                 }
             }
             if (adapter != null) adapter.notifyDataSetChanged();
         });
+    }
+    
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (inventoryListener != null) {
+            inventoryListener.remove();
+            inventoryListener = null;
+        }
     }
 
     private void showAddInventoryDialog() {

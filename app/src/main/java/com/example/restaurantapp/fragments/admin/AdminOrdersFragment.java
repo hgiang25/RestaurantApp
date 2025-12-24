@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.restaurantapp.R;
 import com.example.restaurantapp.adapters.StaffOrderAdapter;
 import com.example.restaurantapp.api.FirebaseService;
+import com.example.restaurantapp.models.OrderItem;
 import com.example.restaurantapp.models.OrderModel;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -129,6 +130,13 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                         OrderModel order = doc.toObject(OrderModel.class);
                         if (order != null) {
                             order.setId(doc.getId());
+                            
+                            // Fix: Lấy items trực tiếp từ document vì toObject không map đúng List<Map>
+                            Object itemsObj = doc.get("items");
+                            if (itemsObj instanceof List) {
+                                order.setRawItems((List<?>) itemsObj);
+                            }
+                            
                             allOrders.add(order);
                         }
                     }
@@ -210,7 +218,45 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
     @Override
     public void onPreparing(OrderModel order) {
-        updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
+        android.util.Log.d("AdminOrders", "=== onPreparing ĐƯỢC GỌI ===");
+        android.util.Log.d("AdminOrders", "Order ID: " + order.getId());
+        
+        List<?> items = order.getItemsForDisplay();
+        
+        // Kiểm tra nguyên liệu trước khi chuẩn bị
+        FirebaseService.getInstance().checkIngredientsAvailability(items,
+                missingList -> {
+                    if (missingList != null && !missingList.isEmpty()) {
+                        // Thiếu nguyên liệu - hiển thị cảnh báo
+                        StringBuilder message = new StringBuilder();
+                        message.append("Không đủ nguyên liệu để chuẩn bị đơn hàng:\n\n");
+                        for (String missing : missingList) {
+                            message.append("• ").append(missing).append("\n");
+                        }
+                        message.append("\nVui lòng nhập thêm nguyên liệu vào kho!");
+
+                        new AlertDialog.Builder(requireContext())
+                                .setTitle("⚠️ Thiếu nguyên liệu")
+                                .setMessage(message.toString())
+                                .setPositiveButton("Đóng", null)
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .show();
+                    } else {
+                        // Đủ nguyên liệu - tiến hành trừ kho
+                        Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
+                        deductIngredientsForOrder(order, () -> {
+                            updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
+                        });
+                    }
+                },
+                e -> {
+                    android.util.Log.e("AdminOrders", "Lỗi kiểm tra nguyên liệu: " + e.getMessage());
+                    // Nếu lỗi kiểm tra, vẫn cho phép chuẩn bị (để không block)
+                    Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
+                    deductIngredientsForOrder(order, () -> {
+                        updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
+                    });
+                });
     }
 
     @Override
@@ -238,14 +284,51 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
     @Override
     public void onCancel(OrderModel order) {
+        // Tạo input để nhập lý do hủy
+        android.widget.EditText inputReason = new android.widget.EditText(requireContext());
+        inputReason.setHint("Nhập lý do hủy (không bắt buộc)");
+        inputReason.setPadding(48, 32, 48, 16);
+        
+        String status = order.getStatus();
+        String warningMessage = "";
+        
+        if ("preparing".equals(status)) {
+            warningMessage = "⚠️ Đơn hàng đang được chuẩn bị!\nNguyên liệu đã trừ sẽ không được hoàn lại.\n\n";
+        }
+        
         new AlertDialog.Builder(requireContext())
-                .setTitle("Hủy đơn hàng")
-                .setMessage("Bạn có chắc muốn hủy đơn hàng này?")
+                .setTitle("🚫 Hủy đơn hàng")
+                .setMessage(warningMessage + "Bạn có chắc muốn hủy đơn #" + 
+                        order.getId().substring(0, Math.min(8, order.getId().length())).toUpperCase() + "?")
+                .setView(inputReason)
                 .setPositiveButton("Hủy đơn", (dialog, which) -> {
-                    updateOrderStatus(order.getId(), "cancelled", "Đã hủy đơn hàng");
+                    String reason = inputReason.getText().toString().trim();
+                    cancelOrder(order.getId(), reason);
                 })
                 .setNegativeButton("Không", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
+    }
+    
+    private void cancelOrder(String orderId, String reason) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "cancelled");
+        updates.put("updatedAt", System.currentTimeMillis());
+        updates.put("cancelledAt", System.currentTimeMillis());
+        if (reason != null && !reason.isEmpty()) {
+            updates.put("cancelReason", reason);
+        }
+        
+        FirebaseService.getInstance().getDb()
+                .collection("orders")
+                .document(orderId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getContext(), "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     @Override
@@ -305,8 +388,9 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
         
         details.append("\n--- Món đặt ---\n");
         
-        if (order.getItems() != null) {
-            for (Object item : order.getItems()) {
+        List<?> itemsList = order.getItemsForDisplay();
+        if (itemsList != null && !itemsList.isEmpty()) {
+            for (Object item : itemsList) {
                 if (item instanceof Map) {
                     Map<String, Object> itemMap = (Map<String, Object>) item;
                     String name = (String) itemMap.get("name");
@@ -324,6 +408,8 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                     }
                 }
             }
+        } else {
+            details.append("(Không có thông tin món)\n");
         }
         
         details.append("\n");
@@ -347,6 +433,102 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                 .setMessage(details.toString())
                 .setPositiveButton("Đóng", null)
                 .show();
+    }
+
+    /**
+     * Trừ nguyên liệu từ kho khi bắt đầu chuẩn bị đơn hàng
+     */
+    private void deductIngredientsForOrder(OrderModel order, Runnable onComplete) {
+        List<?> items = order.getItemsForDisplay();
+        if (items == null || items.isEmpty()) {
+            android.util.Log.d("AdminOrders", "Đơn hàng không có items");
+            onComplete.run();
+            return;
+        }
+
+        android.util.Log.d("AdminOrders", "Bắt đầu trừ kho cho " + items.size() + " món");
+
+        final int[] pendingDeductions = {0};
+        final int[] completedDeductions = {0};
+        final boolean[] hasError = {false};
+
+        // Đếm số món cần trừ
+        for (Object itemObj : items) {
+            String menuItemId = extractMenuItemId(itemObj);
+            if (menuItemId != null && !menuItemId.isEmpty()) {
+                pendingDeductions[0]++;
+            }
+        }
+
+        android.util.Log.d("AdminOrders", "Số món cần trừ: " + pendingDeductions[0]);
+
+        if (pendingDeductions[0] == 0) {
+            android.util.Log.d("AdminOrders", "Không có món nào có menuItemId để trừ");
+            onComplete.run();
+            return;
+        }
+
+        // Trừ nguyên liệu cho từng món
+        for (Object itemObj : items) {
+            String menuItemId = extractMenuItemId(itemObj);
+            int quantity = extractQuantity(itemObj);
+            String itemName = extractItemName(itemObj);
+
+            if (menuItemId != null && !menuItemId.isEmpty()) {
+                android.util.Log.d("AdminOrders", "Đang trừ kho cho: " + itemName + " x" + quantity + " (menuItemId: " + menuItemId + ")");
+                FirebaseService.getInstance().deductIngredientsFromRecipe(
+                        menuItemId,
+                        quantity,
+                        unused -> {
+                            android.util.Log.d("AdminOrders", "Đã trừ kho cho: " + itemName);
+                            completedDeductions[0]++;
+                            if (completedDeductions[0] >= pendingDeductions[0]) {
+                                onComplete.run();
+                            }
+                        },
+                        e -> {
+                            hasError[0] = true;
+                            completedDeductions[0]++;
+                            android.util.Log.e("AdminOrders", "Lỗi trừ kho: " + e.getMessage());
+                            if (completedDeductions[0] >= pendingDeductions[0]) {
+                                onComplete.run();
+                            }
+                        }
+                );
+            }
+        }
+    }
+
+    private String extractMenuItemId(Object itemObj) {
+        if (itemObj instanceof OrderItem) {
+            return ((OrderItem) itemObj).getMenuItemId();
+        } else if (itemObj instanceof Map) {
+            Object id = ((Map<?, ?>) itemObj).get("menuItemId");
+            return id != null ? id.toString() : null;
+        }
+        return null;
+    }
+
+    private int extractQuantity(Object itemObj) {
+        if (itemObj instanceof OrderItem) {
+            return ((OrderItem) itemObj).getQuantity();
+        } else if (itemObj instanceof Map) {
+            Object qty = ((Map<?, ?>) itemObj).get("quantity");
+            if (qty instanceof Number) {
+                return ((Number) qty).intValue();
+            }
+        }
+        return 1;
+    }
+
+    private String extractItemName(Object itemObj) {
+        if (itemObj instanceof OrderItem) {
+            return ((OrderItem) itemObj).getName();
+        } else if (itemObj instanceof Map) {
+            Object name = ((Map<?, ?>) itemObj).get("name");
+            return name != null ? name.toString() : "Unknown";
+        }
+        return "Unknown";
     }
 
     @Override
