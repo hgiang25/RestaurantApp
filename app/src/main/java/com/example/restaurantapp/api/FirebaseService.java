@@ -258,6 +258,33 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
+    public void requestPayment(String orderId, String paymentMethod, String note,
+                               OnSuccessListener<Void> success, OnFailureListener fail) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("paymentStatus", "pending");
+        updates.put("paymentMethod", paymentMethod);
+        updates.put("paymentNote", note);
+        updates.put("paymentRequestedAt", Timestamp.now());
+        
+        db.collection("orders").document(orderId)
+                .update(updates)
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
+    public void confirmPayment(String orderId, 
+                               OnSuccessListener<Void> success, OnFailureListener fail) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("paymentStatus", "completed");
+        updates.put("status", "paid");
+        updates.put("paidAt", Timestamp.now());
+        
+        db.collection("orders").document(orderId)
+                .update(updates)
+                .addOnSuccessListener(success)
+                .addOnFailureListener(fail);
+    }
+
     public ListenerRegistration listenOrdersByCustomerRealtime(String customerId, EventListener<QuerySnapshot> listener) {
         // Bỏ orderBy để không cần composite index - sort ở client side
         return db.collection("orders")
@@ -494,8 +521,9 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
-    public void listenInventoryRealtime(EventListener<QuerySnapshot> listener) {
-        db.collection("inventory").addSnapshotListener(listener);
+    public ListenerRegistration listenInventoryRealtime(EventListener<QuerySnapshot> listener) {
+        return db.collection("inventory")
+                .addSnapshotListener(MetadataChanges.INCLUDE, listener);
     }
 
     /** =================== ATTENDANCE / TIMESHEET =================== */
@@ -842,32 +870,78 @@ public class FirebaseService {
 
                     Log.d(TAG, "Tìm thấy " + ingredients.size() + " nguyên liệu cần trừ");
 
-                    WriteBatch batch = db.batch();
+                    // Lấy danh sách inventory để tìm đúng ID theo tên
+                    db.collection("inventory").get()
+                            .addOnSuccessListener(inventorySnapshot -> {
+                                WriteBatch batch = db.batch();
+                                boolean hasUpdates = false;
 
-                    for (Map<String, Object> ing : ingredients) {
-                        String ingId = (String) ing.get("ingredientId");
-                        Object qtyObj = ing.get("quantityRequired");
-                        double qtyRequired = 0;
-                        if (qtyObj instanceof Double) {
-                            qtyRequired = (Double) qtyObj;
-                        } else if (qtyObj instanceof Long) {
-                            qtyRequired = ((Long) qtyObj).doubleValue();
-                        }
+                                for (Map<String, Object> ing : ingredients) {
+                                    String ingId = (String) ing.get("ingredientId");
+                                    String ingName = (String) ing.get("ingredientName");
+                                    Object qtyObj = ing.get("quantityRequired");
+                                    double qtyRequired = 0;
+                                    if (qtyObj instanceof Double) {
+                                        qtyRequired = (Double) qtyObj;
+                                    } else if (qtyObj instanceof Long) {
+                                        qtyRequired = ((Long) qtyObj).doubleValue();
+                                    }
 
-                        double totalDeduct = qtyRequired * quantity;
-                        Log.d(TAG, "Trừ nguyên liệu: " + ing.get("ingredientName") + " - " + totalDeduct);
+                                    double totalDeduct = qtyRequired * quantity;
+                                    
+                                    // Tìm đúng ID trong inventory
+                                    String actualIngId = null;
+                                    
+                                    // Ưu tiên tìm theo ID
+                                    for (DocumentSnapshot invDoc : inventorySnapshot.getDocuments()) {
+                                        if (invDoc.getId().equals(ingId)) {
+                                            actualIngId = ingId;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    // Fallback: Tìm theo TÊN
+                                    if (actualIngId == null && ingName != null) {
+                                        for (DocumentSnapshot invDoc : inventorySnapshot.getDocuments()) {
+                                            String invName = invDoc.getString("name");
+                                            if (invName != null && invName.equalsIgnoreCase(ingName)) {
+                                                actualIngId = invDoc.getId();
+                                                Log.d(TAG, "Fallback tìm theo tên: " + ingName + " -> ID: " + actualIngId);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (actualIngId != null) {
+                                        Log.d(TAG, "Trừ nguyên liệu: " + ingName + " - " + totalDeduct + " (ID: " + actualIngId + ")");
+                                        DocumentReference stockRef = db.collection("inventory").document(actualIngId);
+                                        batch.update(stockRef, "quantity", FieldValue.increment(-totalDeduct));
+                                        hasUpdates = true;
+                                    } else {
+                                        Log.w(TAG, "Không tìm thấy nguyên liệu: " + ingName);
+                                    }
+                                }
 
-                        DocumentReference stockRef = db.collection("inventory").document(ingId);
-                        batch.update(stockRef, "quantity", FieldValue.increment(-totalDeduct));
-                    }
-
-                    batch.commit()
-                            .addOnSuccessListener(aVoid -> {
-                                Log.d(TAG, "Đã trừ kho thành công cho menuItemId: " + menuItemId);
-                                success.onSuccess(null);
+                                if (hasUpdates) {
+                                    batch.commit()
+                                            .addOnSuccessListener(aVoid -> {
+                                                Log.d(TAG, "✅ Đã trừ kho thành công cho menuItemId: " + menuItemId);
+                                                success.onSuccess(null);
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Log.e(TAG, "❌ Lỗi trừ kho: " + e.getMessage());
+                                                if (e.getMessage() != null && e.getMessage().contains("PERMISSION_DENIED")) {
+                                                    Log.e(TAG, "❌ LỖI PERMISSION: Staff không có quyền update inventory!");
+                                                }
+                                                fail.onFailure(e);
+                                            });
+                                } else {
+                                    Log.w(TAG, "Không có nguyên liệu nào để trừ");
+                                    success.onSuccess(null);
+                                }
                             })
                             .addOnFailureListener(e -> {
-                                Log.e(TAG, "Lỗi trừ kho: " + e.getMessage());
+                                Log.e(TAG, "Lỗi lấy danh sách inventory: " + e.getMessage());
                                 fail.onFailure(e);
                             });
                 },
@@ -876,6 +950,160 @@ public class FirebaseService {
                     fail.onFailure(e);
                 }
         );
+    }
+
+    /**
+     * Kiểm tra nguyên liệu có đủ cho đơn hàng không
+     * @param items Danh sách items trong đơn (List<Map> hoặc List<OrderItem>)
+     * @param callback Callback với kết quả: null nếu đủ, hoặc danh sách thiếu nếu không đủ
+     */
+    public void checkIngredientsAvailability(List<?> items, 
+                                             OnSuccessListener<List<String>> callback,
+                                             OnFailureListener fail) {
+        if (items == null || items.isEmpty()) {
+            callback.onSuccess(null); // Không có items thì pass
+            return;
+        }
+
+        // Lấy inventory hiện tại
+        db.collection("inventory").get()
+                .addOnSuccessListener(inventorySnapshot -> {
+                    // Tạo map inventory: tên -> số lượng hiện có
+                    Map<String, Double> inventoryMap = new HashMap<>();
+                    Map<String, String> inventoryIdMap = new HashMap<>(); // tên -> id
+                    
+                    for (DocumentSnapshot doc : inventorySnapshot.getDocuments()) {
+                        String name = doc.getString("name");
+                        Double qty = doc.getDouble("quantity");
+                        if (name != null) {
+                            inventoryMap.put(name.toLowerCase(), qty != null ? qty : 0);
+                            inventoryIdMap.put(doc.getId(), name.toLowerCase());
+                        }
+                    }
+
+                    // Tính tổng nguyên liệu cần dùng cho tất cả items
+                    Map<String, Double> totalRequired = new HashMap<>();
+                    final int[] pendingRecipes = {0};
+                    final int[] completedRecipes = {0};
+                    List<String> missingIngredients = new ArrayList<>();
+
+                    // Đếm số recipe cần fetch
+                    for (Object itemObj : items) {
+                        String menuItemId = extractMenuItemIdFromObject(itemObj);
+                        if (menuItemId != null && !menuItemId.isEmpty()) {
+                            pendingRecipes[0]++;
+                        }
+                    }
+
+                    if (pendingRecipes[0] == 0) {
+                        callback.onSuccess(null);
+                        return;
+                    }
+
+                    // Lấy công thức cho từng món
+                    for (Object itemObj : items) {
+                        String menuItemId = extractMenuItemIdFromObject(itemObj);
+                        int orderQty = extractQuantityFromObject(itemObj);
+                        String itemName = extractNameFromObject(itemObj);
+
+                        if (menuItemId != null && !menuItemId.isEmpty()) {
+                            getRecipeByMenuItemId(menuItemId,
+                                    recipeSnapshot -> {
+                                        if (!recipeSnapshot.isEmpty()) {
+                                            DocumentSnapshot recipeDoc = recipeSnapshot.getDocuments().get(0);
+                                            List<Map<String, Object>> ingredients = 
+                                                (List<Map<String, Object>>) recipeDoc.get("ingredients");
+
+                                            if (ingredients != null) {
+                                                for (Map<String, Object> ing : ingredients) {
+                                                    String ingName = (String) ing.get("ingredientName");
+                                                    String ingId = (String) ing.get("ingredientId");
+                                                    Object qtyObj = ing.get("quantityRequired");
+                                                    double qtyRequired = 0;
+                                                    if (qtyObj instanceof Double) {
+                                                        qtyRequired = (Double) qtyObj;
+                                                    } else if (qtyObj instanceof Long) {
+                                                        qtyRequired = ((Long) qtyObj).doubleValue();
+                                                    }
+
+                                                    double totalNeed = qtyRequired * orderQty;
+                                                    
+                                                    // Tìm key trong inventory (theo ID hoặc tên)
+                                                    String key = null;
+                                                    if (ingId != null && inventoryIdMap.containsKey(ingId)) {
+                                                        key = inventoryIdMap.get(ingId);
+                                                    } else if (ingName != null) {
+                                                        key = ingName.toLowerCase();
+                                                    }
+
+                                                    if (key != null) {
+                                                        totalRequired.merge(key, totalNeed, Double::sum);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        completedRecipes[0]++;
+                                        if (completedRecipes[0] >= pendingRecipes[0]) {
+                                            // Đã fetch xong tất cả recipe, kiểm tra
+                                            for (Map.Entry<String, Double> entry : totalRequired.entrySet()) {
+                                                String ingKey = entry.getKey();
+                                                double required = entry.getValue();
+                                                double available = inventoryMap.getOrDefault(ingKey, 0.0);
+
+                                                if (available < required) {
+                                                    missingIngredients.add(String.format("%s: cần %.1f, còn %.1f", 
+                                                            ingKey, required, available));
+                                                }
+                                            }
+
+                                            if (missingIngredients.isEmpty()) {
+                                                callback.onSuccess(null); // Đủ nguyên liệu
+                                            } else {
+                                                callback.onSuccess(missingIngredients); // Thiếu
+                                            }
+                                        }
+                                    },
+                                    e -> {
+                                        completedRecipes[0]++;
+                                        if (completedRecipes[0] >= pendingRecipes[0]) {
+                                            if (missingIngredients.isEmpty()) {
+                                                callback.onSuccess(null);
+                                            } else {
+                                                callback.onSuccess(missingIngredients);
+                                            }
+                                        }
+                                    });
+                        }
+                    }
+                })
+                .addOnFailureListener(fail);
+    }
+
+    private String extractMenuItemIdFromObject(Object obj) {
+        if (obj instanceof Map) {
+            Object id = ((Map<?, ?>) obj).get("menuItemId");
+            return id != null ? id.toString() : null;
+        }
+        return null;
+    }
+
+    private int extractQuantityFromObject(Object obj) {
+        if (obj instanceof Map) {
+            Object qty = ((Map<?, ?>) obj).get("quantity");
+            if (qty instanceof Number) {
+                return ((Number) qty).intValue();
+            }
+        }
+        return 1;
+    }
+
+    private String extractNameFromObject(Object obj) {
+        if (obj instanceof Map) {
+            Object name = ((Map<?, ?>) obj).get("name");
+            return name != null ? name.toString() : "Unknown";
+        }
+        return "Unknown";
     }
 
     /** Tìm kiếm nhân viên theo tên (username) */

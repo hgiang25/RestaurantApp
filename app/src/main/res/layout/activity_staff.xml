@@ -8,13 +8,13 @@
     <FrameLayout
         android:id="@+id/fragmentContainer"
         android:layout_width="match_parent"
-        android:layout_height="626dp"
-        android:layout_marginBottom="70dp" />
+        android:layout_height="match_parent"
+        android:paddingBottom="56dp" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
-        android:layout_height="102dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@drawable/bg_bottom_nav"
         android:elevation="16dp"

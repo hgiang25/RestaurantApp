@@ -45,18 +45,33 @@ public class RecipeModel {
         }
 
         for (RecipeIngredient recipeIng : ingredients) {
-            boolean found = false;
+            InventoryModel matchedInv = null;
+            
+            // Ưu tiên tìm theo ID
             for (InventoryModel inv : inventoryList) {
-                if (inv.getId().equals(recipeIng.getIngredientId())) {
-                    found = true;
-                    if (inv.getQuantity() < recipeIng.getQuantityRequired()) {
-                        return false; // Không đủ số lượng
-                    }
+                if (inv.getId() != null && inv.getId().equals(recipeIng.getIngredientId())) {
+                    matchedInv = inv;
                     break;
                 }
             }
-            if (!found) {
+            
+            // Fallback: Tìm theo TÊN nếu không match ID
+            if (matchedInv == null) {
+                for (InventoryModel inv : inventoryList) {
+                    if (inv.getName() != null && recipeIng.getIngredientName() != null 
+                        && inv.getName().equalsIgnoreCase(recipeIng.getIngredientName())) {
+                        matchedInv = inv;
+                        break;
+                    }
+                }
+            }
+            
+            if (matchedInv == null) {
                 return false; // Không tìm thấy nguyên liệu trong kho
+            }
+            
+            if (matchedInv.getQuantity() < recipeIng.getQuantityRequired()) {
+                return false; // Không đủ số lượng
             }
         }
         return true;
@@ -75,18 +90,33 @@ public class RecipeModel {
         }
 
         for (RecipeIngredient recipeIng : ingredients) {
-            boolean found = false;
+            InventoryModel matchedInv = null;
+            
+            // Ưu tiên tìm theo ID
             for (InventoryModel inv : inventoryList) {
-                if (inv.getId().equals(recipeIng.getIngredientId())) {
-                    found = true;
-                    if (inv.getQuantity() < recipeIng.getQuantityRequired()) {
-                        missing.add(recipeIng.getIngredientName() + " (cần: " + 
-                                recipeIng.getQuantityRequired() + ", có: " + inv.getQuantity() + ")");
-                    }
+                if (inv.getId() != null && inv.getId().equals(recipeIng.getIngredientId())) {
+                    matchedInv = inv;
                     break;
                 }
             }
-            if (!found) {
+            
+            // Fallback: Tìm theo TÊN nếu không match ID
+            if (matchedInv == null) {
+                for (InventoryModel inv : inventoryList) {
+                    if (inv.getName() != null && recipeIng.getIngredientName() != null 
+                        && inv.getName().equalsIgnoreCase(recipeIng.getIngredientName())) {
+                        matchedInv = inv;
+                        break;
+                    }
+                }
+            }
+            
+            if (matchedInv != null) {
+                if (matchedInv.getQuantity() < recipeIng.getQuantityRequired()) {
+                    missing.add(recipeIng.getIngredientName() + " (cần: " + 
+                            recipeIng.getQuantityRequired() + ", có: " + matchedInv.getQuantity() + ")");
+                }
+            } else {
                 missing.add(recipeIng.getIngredientName() + " (không có trong kho)");
             }
         }

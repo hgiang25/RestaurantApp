@@ -120,8 +120,9 @@ public class StaffOrderAdapter extends RecyclerView.Adapter<StaffOrderAdapter.Or
             // Order items
             StringBuilder itemsText = new StringBuilder();
             int itemCount = 0;
-            if (order.getItems() != null) {
-                for (Object item : order.getItems()) {
+            List<?> itemsList = order.getItemsForDisplay();
+            if (itemsList != null) {
+                for (Object item : itemsList) {
                     if (item instanceof Map) {
                         Map<String, Object> itemMap = (Map<String, Object>) item;
                         String name = (String) itemMap.get("name");
@@ -212,13 +213,14 @@ public class StaffOrderAdapter extends RecyclerView.Adapter<StaffOrderAdapter.Or
                     });
 
                     btnCancel.setVisibility(View.VISIBLE);
+                    btnCancel.setText("✕ Hủy");
                     btnCancel.setOnClickListener(v -> {
                         if (listener != null) listener.onCancel(order);
                     });
                     break;
 
                 case "confirmed":
-                    // Confirmed: Bắt đầu nấu
+                    // Confirmed: Bắt đầu nấu / Hủy
                     btnAction1.setVisibility(View.VISIBLE);
                     btnAction1.setText("🍳 Bắt đầu nấu");
                     btnAction1.setBackgroundTintList(ColorStateList.valueOf(
@@ -229,10 +231,17 @@ public class StaffOrderAdapter extends RecyclerView.Adapter<StaffOrderAdapter.Or
                         android.util.Log.d("StaffOrderAdapter", "Listener null? " + (listener == null));
                         if (listener != null) listener.onPreparing(order);
                     });
+                    
+                    // Cho phép hủy khi đã xác nhận nhưng chưa nấu
+                    btnCancel.setVisibility(View.VISIBLE);
+                    btnCancel.setText("✕ Hủy");
+                    btnCancel.setOnClickListener(v -> {
+                        if (listener != null) listener.onCancel(order);
+                    });
                     break;
 
                 case "preparing":
-                    // Preparing: Phục vụ
+                    // Preparing: Phục vụ / Hủy (nếu cần)
                     btnAction1.setVisibility(View.VISIBLE);
                     btnAction1.setText("🍽 Phục vụ");
                     btnAction1.setBackgroundTintList(ColorStateList.valueOf(
@@ -240,14 +249,36 @@ public class StaffOrderAdapter extends RecyclerView.Adapter<StaffOrderAdapter.Or
                     btnAction1.setOnClickListener(v -> {
                         if (listener != null) listener.onServed(order);
                     });
+                    
+                    // Cho phép hủy khi đang chuẩn bị (trường hợp khách hủy gấp)
+                    btnCancel.setVisibility(View.VISIBLE);
+                    btnCancel.setText("✕ Hủy");
+                    btnCancel.setOnClickListener(v -> {
+                        if (listener != null) listener.onCancel(order);
+                    });
                     break;
 
                 case "served":
                     // Served: Thanh toán
                     btnAction1.setVisibility(View.VISIBLE);
-                    btnAction1.setText("💰 Thanh toán");
-                    btnAction1.setBackgroundTintList(ColorStateList.valueOf(
-                            ContextCompat.getColor(itemView.getContext(), R.color.secondary)));
+                    
+                    // Kiểm tra xem khách hàng đã yêu cầu thanh toán chưa
+                    String paymentStatus = order.getPaymentStatus();
+                    String paymentMethod = order.getPaymentMethod();
+                    
+                    if ("pending".equals(paymentStatus)) {
+                        // Khách đã gọi thanh toán - hiển thị phương thức thanh toán
+                        String methodText = getPaymentMethodText(paymentMethod);
+                        btnAction1.setText("💰 Xác nhận (" + methodText + ")");
+                        btnAction1.setBackgroundTintList(ColorStateList.valueOf(
+                                ContextCompat.getColor(itemView.getContext(), R.color.status_confirmed)));
+                    } else {
+                        // Chưa có yêu cầu thanh toán
+                        btnAction1.setText("💰 Thanh toán");
+                        btnAction1.setBackgroundTintList(ColorStateList.valueOf(
+                                ContextCompat.getColor(itemView.getContext(), R.color.secondary)));
+                    }
+                    
                     btnAction1.setOnClickListener(v -> {
                         if (listener != null) listener.onPaid(order);
                     });
@@ -260,6 +291,17 @@ public class StaffOrderAdapter extends RecyclerView.Adapter<StaffOrderAdapter.Or
             itemView.setOnClickListener(v -> {
                 if (listener != null) listener.onViewDetails(order);
             });
+        }
+
+        private String getPaymentMethodText(String method) {
+            if (method == null) return "Tiền mặt";
+            switch (method) {
+                case "cash": return "Tiền mặt";
+                case "bank_transfer": return "CK";
+                case "e_wallet": return "Ví";
+                case "card": return "Thẻ";
+                default: return method;
+            }
         }
     }
 }

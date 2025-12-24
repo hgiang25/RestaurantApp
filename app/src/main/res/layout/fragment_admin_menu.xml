@@ -3,12 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@color/background"
+    android:focusableInTouchMode="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:descendantFocusability="afterDescendants">
 
         <!-- Modern Header -->
         <FrameLayout
@@ -78,7 +80,10 @@
                     android:inputType="text"
                     android:imeOptions="actionSearch"
                     android:paddingStart="12dp"
-                    android:maxLines="1"/>
+                    android:maxLines="1"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:clickable="true"/>
 
                 <ImageView
                     android:id="@+id/btnClearSearch"
@@ -167,7 +172,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="20dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="76dp"
         android:text="Thêm món"
         android:textColor="@color/white"
         app:icon="@drawable/ic_add"
