@@ -45,8 +45,17 @@ public class StaffTablesFragment extends Fragment {
         return view;
     }
 
+    private static final String TABLE_LISTENER_KEY = "staff_tables";
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Remove listener khi fragment không còn hiển thị
+        FirebaseService.getInstance().removeTableListener(TABLE_LISTENER_KEY);
+    }
+
     private void loadTables() {
-        FirebaseService.getInstance().listenTablesRealtime((value, error) -> {
+        FirebaseService.getInstance().listenTablesRealtime(TABLE_LISTENER_KEY, (value, error) -> {
             if (error != null || value == null) return;
 
             tableList.clear();

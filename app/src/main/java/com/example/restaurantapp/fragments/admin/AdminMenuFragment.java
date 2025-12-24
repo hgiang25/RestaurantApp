@@ -59,6 +59,67 @@ public class AdminMenuFragment extends Fragment {
         return view;
     }
 
+    private void add50SampleMenuItems() {
+        // Danh sách món ăn mẫu: {Tên, Giá, Loại}
+        Object[][] items = {
+                {"Phở bò", 45000, "Món chính"}, {"Cơm gà", 55000, "Món chính"},
+                {"Bún chả", 50000, "Món chính"}, {"Mì xào", 40000, "Món chính"},
+                {"Cá chiên xốt chua ngọt", 60000, "Món chính"}, {"Gà nướng mật ong", 65000, "Món chính"},
+                {"Sườn xào chua ngọt", 70000, "Món chính"}, {"Bò lúc lắc", 75000, "Món chính"},
+                {"Tôm rang muối", 80000, "Món chính"}, {"Cơm chiên hải sản", 55000, "Món chính"},
+
+                {"Gỏi cuốn", 30000, "Món phụ"}, {"Nem rán", 35000, "Món phụ"},
+                {"Súp cua", 35000, "Món phụ"}, {"Bánh mì kẹp thịt", 25000, "Món phụ"},
+                {"Khoai tây chiên", 20000, "Món phụ"}, {"Chả giò rế", 30000, "Món phụ"},
+                {"Salad trộn", 25000, "Món phụ"}, {"Xôi gà", 35000, "Món phụ"},
+                {"Bánh bao", 20000, "Món phụ"}, {"Bánh xèo", 40000, "Món phụ"},
+
+                {"Trà đào", 20000, "Đồ uống"}, {"Cà phê sữa", 25000, "Đồ uống"},
+                {"Sinh tố bơ", 30000, "Đồ uống"}, {"Nước ép cam", 20000, "Đồ uống"},
+                {"Soda chanh", 15000, "Đồ uống"}, {"Nước suối", 10000, "Đồ uống"},
+                {"Trà sữa", 25000, "Đồ uống"}, {"Cà phê đen", 20000, "Đồ uống"},
+                {"Sữa đậu nành", 20000, "Đồ uống"}, {"Nước ép dưa hấu", 25000, "Đồ uống"},
+
+                {"Bánh flan", 20000, "Tráng miệng"}, {"Chè thập cẩm", 30000, "Tráng miệng"},
+                {"Kem vani", 15000, "Tráng miệng"}, {"Bánh ngọt", 25000, "Tráng miệng"},
+                {"Pudding socola", 30000, "Tráng miệng"}, {"Bánh bông lan", 20000, "Tráng miệng"},
+                {"Trà xanh đá xay", 25000, "Tráng miệng"}, {"Kem socola", 20000, "Tráng miệng"},
+                {"Bánh crepe", 25000, "Tráng miệng"}, {"Chè đậu xanh", 20000, "Tráng miệng"},
+
+                {"Xúc xích", 30000, "Khác"}, {"Pizza mini", 35000, "Khác"},
+                {"Hamburger", 40000, "Khác"}, {"Hotdog", 25000, "Khác"},
+                {"Snack khoai tây", 15000, "Khác"}, {"Bắp rang bơ", 20000, "Khác"},
+                {"Mỳ ống sốt cà chua", 35000, "Khác"}, {"Cơm trộn Hàn Quốc", 45000, "Khác"},
+                {"Bánh trứng", 15000, "Khác"}, {"Xôi xoài", 30000, "Khác"}
+        };
+
+        for (Object[] item : items) {
+            String name = (String) item[0];
+            double price = ((Number) item[1]).doubleValue();
+            String category = (String) item[2];
+
+            FirebaseService.getInstance().addMenuItem(
+                    name,
+                    price,
+                    category,
+                    true, // available mặc định
+                    null, // imageUrl
+                    null, // description
+                    ref -> {}, // callback thành công
+                    e -> {
+                        if (getContext() != null) {
+                            Toast.makeText(getContext(), "Lỗi thêm " + name + ": " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+            );
+        }
+
+        if (getContext() != null) {
+            Toast.makeText(getContext(), "Đã gửi yêu cầu thêm 50 món ăn mẫu", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
     private void loadMenu() {
         FirebaseService.getInstance().listenMenuRealtime((value, error) -> {
             if (!isAdded() || getContext() == null) return;

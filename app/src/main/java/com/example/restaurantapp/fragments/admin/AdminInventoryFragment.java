@@ -112,6 +112,53 @@ public class AdminInventoryFragment extends Fragment {
         dialog.show();
     }
 
+    private void addSampleInventory() {
+        // Danh sách nguyên liệu mẫu
+        String[][] items = {
+                {"Tỏi", "5", "kg", "1"},
+                {"Ớt đỏ", "7", "kg", "2"},
+                {"Nước mắm", "50", "lít", "10"},
+                {"Dầu ăn", "40", "lít", "5"},
+                {"Đường", "30", "kg", "5"},
+                {"Muối", "20", "kg", "3"},
+                {"Tiêu", "5", "kg", "1"},
+                {"Bánh mì", "50", "cái", "10"},
+                {"Bột năng", "15", "kg", "3"},
+                {"Bột mì", "40", "kg", "5"},
+                {"Trứng gà", "100", "cái", "20"},
+                {"Sữa tươi", "30", "lít", "5"},
+                {"Kem tươi", "20", "lít", "5"},
+                {"Phô mai", "15", "kg", "3"},
+                {"Bánh ngọt", "50", "cái", "10"},
+                {"Mì ống", "25", "kg", "5"},
+                {"Rau sống", "20", "kg", "5"}
+        };
+
+        for (String[] item : items) {
+            String name = item[0];
+            double quantity = Double.parseDouble(item[1]);
+            String unit = item[2];
+            double minQty = Double.parseDouble(item[3]);
+
+            FirebaseService.getInstance().addStockItem(name, quantity, unit,
+                    ref -> {
+                        // Thêm minQuantity
+                        ref.update("minQuantity", minQty);
+                    },
+                    e -> {
+                        if (getContext() != null) {
+                            Toast.makeText(getContext(), "Lỗi thêm " + name + ": " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+            );
+        }
+
+        if (getContext() != null) {
+            Toast.makeText(getContext(), "Đã gửi yêu cầu thêm nguyên liệu mẫu", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
     private void showInventoryDetail(InventoryModel item) {
         if (getContext() == null || !isAdded()) return;
         

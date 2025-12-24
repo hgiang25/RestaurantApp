@@ -16,7 +16,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 
 public class AdminDashboardFragment extends Fragment {
 
-    private TextView txtTotalOrders, txtTotalRevenue, txtTotalStaff, txtTotalTables;
+    private TextView txtTotalOrders, txtTotalRevenue, txtTotalStaff, txtTotalTables,txtFreeTables;
     private TextView txtPendingOrders;
 
     @Nullable
@@ -29,6 +29,7 @@ public class AdminDashboardFragment extends Fragment {
         txtTotalStaff = view.findViewById(R.id.txtTotalStaff);
         txtTotalTables = view.findViewById(R.id.txtTotalTables);
         txtPendingOrders = view.findViewById(R.id.txtPendingOrders);
+        txtFreeTables = view.findViewById(R.id.txtFreeTables); // thêm dòng này
 
         loadDashboardData();
 
@@ -79,10 +80,22 @@ public class AdminDashboardFragment extends Fragment {
         });
 
         // Load số bàn
-        FirebaseService.getInstance().listenTablesRealtime((value, error) -> {
-            if (!isAdded() || getContext() == null) return;
-            if (error != null || value == null) return;
-            if (txtTotalTables != null) txtTotalTables.setText(String.valueOf(value.size()));
+        FirebaseService.getInstance().listenTablesRealtime("dashboard", (value, error) -> {
+            if (!isAdded() || getContext() == null || value == null) return;
+
+            int totalTables = value.size();
+            int freeTables = 0;
+
+            for (DocumentSnapshot doc : value.getDocuments()) {
+                String status = doc.getString("status");
+                if ("free".equals(status)) {
+                    freeTables++;
+                }
+            }
+
+            if (txtTotalTables != null) txtTotalTables.setText(String.valueOf(totalTables));
+            if (txtFreeTables != null) txtFreeTables.setText(freeTables + " còn trống");
         });
+
     }
 }

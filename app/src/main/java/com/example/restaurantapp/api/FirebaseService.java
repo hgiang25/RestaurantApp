@@ -144,23 +144,39 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
-    /** Listen realtime danh sách bàn */
-    public ListenerRegistration listenTablesRealtime(EventListener<QuerySnapshot> listener) {
-        removeTableListener();
+    /** =================== TABLES =================== */
 
-        tableListener = db.collection("tables")
+    private final Map<String, ListenerRegistration> tableListeners = new HashMap<>();
+
+    /** Listen realtime danh sách bàn với key để tách listener */
+    public ListenerRegistration listenTablesRealtime(String key, EventListener<QuerySnapshot> listener) {
+        removeTableListener(key); // nếu listener cùng key đã tồn tại thì remove
+
+        ListenerRegistration registration = db.collection("tables")
                 .orderBy("createdAt", Query.Direction.ASCENDING)
                 .addSnapshotListener(listener);
-        return tableListener;
+
+        tableListeners.put(key, registration);
+        return registration;
     }
 
-    /** Remove listener */
-    public void removeTableListener() {
-        if (tableListener != null) {
-            tableListener.remove();
-            tableListener = null;
+    /** Remove listener theo key */
+    public void removeTableListener(String key) {
+        ListenerRegistration reg = tableListeners.get(key);
+        if (reg != null) {
+            reg.remove();
+            tableListeners.remove(key);
         }
     }
+
+    /** Remove tất cả listener */
+    public void removeAllTableListeners() {
+        for (ListenerRegistration reg : tableListeners.values()) {
+            if (reg != null) reg.remove();
+        }
+        tableListeners.clear();
+    }
+
 
 
     /** =================== MENU =================== */
@@ -721,4 +737,51 @@ public class FirebaseService {
                 .whereEqualTo("status", "free")
                 .addSnapshotListener(listener);
     }
+
+    /** Tìm kiếm nhân viên theo tên (username) */
+    public void searchStaffByName(String nameQuery,
+                                  OnSuccessListener<List<User>> success,
+                                  OnFailureListener fail) {
+        if (nameQuery == null || nameQuery.trim().isEmpty()) {
+            // Nếu query rỗng, trả về tất cả nhân viên
+            listenUsersByRoleRealtime("staff", (value, error) -> {
+                if (error != null || value == null) {
+                    fail.onFailure(error != null ? new Exception(error.getMessage()) : new Exception("Unknown error"));
+                    return;
+                }
+                List<User> result = new ArrayList<>();
+                for (DocumentSnapshot doc : value.getDocuments()) {
+                    User user = doc.toObject(User.class);
+                    if (user != null) {
+                        user.setId(doc.getId());
+                        result.add(user);
+                    }
+                }
+                success.onSuccess(result);
+            });
+            return;
+        }
+
+        // Dùng startAt / endAt để tìm kiếm tên gần đúng
+        String queryLower = nameQuery.toLowerCase();
+        db.collection("users")
+                .whereEqualTo("role", "staff")
+                .orderBy("usernameLower") // cần có field usernameLower trong Firestore (username.toLowerCase())
+                .startAt(queryLower)
+                .endAt(queryLower + "\uf8ff")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<User> result = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        User user = doc.toObject(User.class);
+                        if (user != null) {
+                            user.setId(doc.getId());
+                            result.add(user);
+                        }
+                    }
+                    success.onSuccess(result);
+                })
+                .addOnFailureListener(fail);
+    }
+
 }

@@ -102,19 +102,16 @@ public class AdminTablesFragment extends Fragment {
     /** ================= REALTIME ================= */
 
     private void loadTables() {
-        FirebaseService.getInstance().listenTablesRealtime((value, error) -> {
+        FirebaseService.getInstance().listenTablesRealtime("tables", (value, error) -> {
             if (!isAdded() || value == null) return;
 
             allTables.clear();
-
             for (DocumentSnapshot doc : value.getDocuments()) {
                 TableModel table = doc.toObject(TableModel.class);
                 if (table == null) continue;
-
                 table.setId(doc.getId());
                 allTables.add(table);
             }
-
             applyFilter();
         });
     }
@@ -122,7 +119,7 @@ public class AdminTablesFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        FirebaseService.getInstance().removeTableListener();
+        FirebaseService.getInstance().removeTableListener("tables");
     }
 
     /** ================= ADD ================= */
