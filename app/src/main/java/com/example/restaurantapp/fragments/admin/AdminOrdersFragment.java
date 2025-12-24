@@ -21,6 +21,7 @@ import com.example.restaurantapp.adapters.StaffOrderAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.OrderItem;
 import com.example.restaurantapp.models.OrderModel;
+import com.example.restaurantapp.models.User;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -264,22 +265,24 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
         updateOrderStatus(order.getId(), "served", "Đã phục vụ đơn hàng");
     }
 
+    // Trong AdminOrdersFragment.java
     @Override
     public void onPaid(OrderModel order) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Xác nhận thanh toán")
-                .setMessage("Khách đã thanh toán " + 
-                        String.format(Locale.getDefault(), "%,.0fđ", order.getTotal() != null ? order.getTotal() : 0) + "?")
-                .setPositiveButton("Đã thanh toán", (dialog, which) -> {
-                    updateOrderStatus(order.getId(), "paid", "Đã thanh toán");
-                    
-                    // Update loyalty points for customer
-                    if (order.getTotal() != null && order.getCustomerId() != null) {
-                        updateLoyaltyPoints(order.getCustomerId(), order.getTotal());
-                    }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+                .setMessage("Thu tiền: " + String.format(Locale.getDefault(), "%,.0fđ", order.getTotal()))
+                .setPositiveButton("Xác nhận", (dialog, which) -> {
+
+                    FirebaseService.getInstance().confirmPayment(order.getId(), aVoid -> {
+                        // Gọi service cộng điểm
+                        FirebaseService.getInstance().updateLoyaltyPoints(
+                                order.getCustomerId(),
+                                order.getTotal(),
+                                unused -> Toast.makeText(getContext(), "Đã cộng điểm tích lũy!", Toast.LENGTH_SHORT).show()
+                        );
+                    }, e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+
+                }).show();
     }
 
     @Override
@@ -353,21 +356,7 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                 });
     }
     
-    private void updateLoyaltyPoints(String customerId, Double total) {
-        int pointsToAdd = (int) (total / 10000);
-        if (pointsToAdd <= 0) return;
-        
-        FirebaseService.getInstance().getDb()
-                .collection("users")
-                .document(customerId)
-                .get()
-                .addOnSuccessListener(doc -> {
-                    Long currentPoints = doc.getLong("loyaltyPoints");
-                    long newPoints = (currentPoints != null ? currentPoints : 0) + pointsToAdd;
-                    
-                    doc.getReference().update("loyaltyPoints", newPoints);
-                });
-    }
+
     
     private void showOrderDetailsDialog(OrderModel order) {
         StringBuilder details = new StringBuilder();

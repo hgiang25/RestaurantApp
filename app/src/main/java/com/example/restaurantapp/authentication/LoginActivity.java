@@ -6,6 +6,7 @@ import android.app.ActivityOptions;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.view.animation.Animation;
@@ -26,83 +27,81 @@ import com.example.restaurantapp.utils.PreferenceManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import android.widget.CheckBox;
+import android.widget.Toast;
+
 
 public class LoginActivity extends AppCompatActivity {
 
     TextInputEditText edtEmail, edtPassword;
     MaterialButton btnLogin;
-    TextView txtRegister;
-
-    ImageView imgLogo;
-    TextView txtLoginTitle;
-    CardView cardForm;
-    LottieAnimationView lottieBackground; // hoặc View nếu bạn dùng View
-
+    TextView txtRegister, txtForgotPassword;
+    CheckBox cbRemember;
 
     ProgressDialog dialog;
     FirebaseService api;
-
-    @Override
-    protected void attachBaseContext(Context newBase) {
-        super.attachBaseContext(LocaleHelper.onAttach(newBase));
-    }
+    SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Apply saved settings
-        PreferenceManager prefs = new PreferenceManager(this);
-        prefs.applySavedSettings();
-        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Ánh xạ
+        // Ánh xạ view
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
         btnLogin = findViewById(R.id.btnLogin);
         txtRegister = findViewById(R.id.txtRegister);
-
-        // Ánh xạ view animation
-//        imgLogo = findViewById(R.id.imgLogo);
-//        txtLoginTitle = findViewById(R.id.txtLoginTitle);
-//        cardForm = findViewById(R.id.cardForm);
-//        txtRegister = findViewById(R.id.txtRegister);
-//        lottieBackground = findViewById(R.id.lottie_background);
-
-
-
+        txtForgotPassword = findViewById(R.id.txtForgotPassword);
+        cbRemember = findViewById(R.id.cbRemember);
 
         dialog = new ProgressDialog(this);
         dialog.setMessage("Đang đăng nhập...");
 
         api = FirebaseService.getInstance();
 
+        // SharedPreferences
+        prefs = getSharedPreferences("restaurant_prefs", MODE_PRIVATE);
+
+        // Nếu đã lưu, tự động điền
+        if (prefs.getBoolean("remember_login", false)) {
+            edtEmail.setText(prefs.getString("saved_email", ""));
+            edtPassword.setText(prefs.getString("saved_password", ""));
+            cbRemember.setChecked(true);
+
+            // Auto login nếu đã đăng nhập
+            if (api.isLoggedIn()) {
+                redirectToRoleActivity();
+            }
+        }
+
         // Xử lý login
         btnLogin.setOnClickListener(v -> handleLogin());
 
-        // Chuyển sang RegisterActivity với animation
+        // Chuyển sang RegisterActivity
         txtRegister.setOnClickListener(v -> {
-            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
-            startActivity(intent, ActivityOptions.makeCustomAnimation(this,
-                    R.anim.slide_in_right, R.anim.slide_out_left).toBundle());
+            startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
+        });
+
+        // Quên mật khẩu
+        txtForgotPassword.setOnClickListener(v -> {
+            String email = edtEmail.getText().toString().trim();
+            if (email.isEmpty()) {
+                edtEmail.setError("Nhập email để khôi phục mật khẩu");
+                return;
+            }
+            FirebaseAuth.getInstance()
+                    .sendPasswordResetEmail(email)
+                    .addOnSuccessListener(unused ->
+                            Toast.makeText(this,
+                                    "Đã gửi email đặt lại mật khẩu",
+                                    Toast.LENGTH_LONG).show())
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this,
+                                    "Email không tồn tại",
+                                    Toast.LENGTH_SHORT).show());
         });
     }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-//        Animation slideFromBottom = AnimationUtils.loadAnimation(this, R.anim.slide_from_bottom);
-//        Animation slideFromBottomDelayed = AnimationUtils.loadAnimation(this, R.anim.slide_from_bottom_delayed);
-//
-//        imgLogo.startAnimation(slideFromBottom);
-//        txtLoginTitle.startAnimation(slideFromBottomDelayed);
-//        cardForm.startAnimation(slideFromBottom);
-//        txtRegister.startAnimation(slideFromBottomDelayed);
-//        btnLogin.startAnimation(slideFromBottom);
-//        lottieBackground.startAnimation(slideFromBottom);
-    }
-
 
     private void handleLogin() {
         String email = edtEmail.getText().toString().trim();
@@ -116,13 +115,10 @@ public class LoginActivity extends AppCompatActivity {
         api.login(email, pass,
                 unused -> {
                     String uid = api.getCurrentUserId();
-                    // Lấy role từ Firestore
                     api.getDb().collection("users").document(uid).get()
                             .addOnSuccessListener(snapshot -> {
                                 dialog.dismiss();
                                 String role = snapshot.getString("role");
-
-                                // Chỉ kiểm tra email verify với staff và customer
                                 boolean isVerified = FirebaseAuth.getInstance()
                                         .getCurrentUser().isEmailVerified();
                                 if (!isVerified && !role.equals("admin")) {
@@ -130,22 +126,18 @@ public class LoginActivity extends AppCompatActivity {
                                     return;
                                 }
 
-                                // Chuyển màn hình theo role với animation
-                                Intent intent;
-                                switch (role) {
-                                    case "admin":
-                                        intent = new Intent(this, AdminActivity.class);
-                                        break;
-                                    case "staff":
-                                        intent = new Intent(this, StaffActivity.class);
-                                        break;
-                                    default:
-                                        intent = new Intent(this, CustomerActivity.class);
-                                        break;
+                                // Lưu thông tin nếu check Remember
+                                SharedPreferences.Editor editor = prefs.edit();
+                                if (cbRemember.isChecked()) {
+                                    editor.putBoolean("remember_login", true);
+                                    editor.putString("saved_email", email);
+                                    editor.putString("saved_password", pass);
+                                } else {
+                                    editor.clear();
                                 }
-                                startActivity(intent, ActivityOptions.makeCustomAnimation(this,
-                                        R.anim.slide_in_right, R.anim.slide_out_left).toBundle());
-                                finish();
+                                editor.apply();
+
+                                redirectToRoleActivity();
                             })
                             .addOnFailureListener(e -> {
                                 dialog.dismiss();
@@ -158,4 +150,20 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
+    private void redirectToRoleActivity() {
+        String uid = api.getCurrentUserId();
+        api.getDb().collection("users").document(uid).get()
+                .addOnSuccessListener(snapshot -> {
+                    String role = snapshot.getString("role");
+                    Intent intent;
+                    switch (role) {
+                        case "admin": intent = new Intent(this, AdminActivity.class); break;
+                        case "staff": intent = new Intent(this, StaffActivity.class); break;
+                        default: intent = new Intent(this, CustomerActivity.class); break;
+                    }
+                    startActivity(intent);
+                    finish();
+                });
+    }
 }
+

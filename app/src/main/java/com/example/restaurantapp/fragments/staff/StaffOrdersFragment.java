@@ -21,6 +21,7 @@ import com.example.restaurantapp.adapters.StaffOrderAdapter;
 import com.example.restaurantapp.api.FirebaseService;
 import com.example.restaurantapp.models.OrderItem;
 import com.example.restaurantapp.models.OrderModel;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -269,26 +270,33 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
             message = "Khách đã thanh toán " + 
                     String.format(Locale.getDefault(), "%,.0fđ", order.getTotal() != null ? order.getTotal() : 0) + "?";
         }
-        
+
         new AlertDialog.Builder(requireContext())
                 .setTitle("Xác nhận thanh toán")
                 .setMessage(message)
                 .setPositiveButton("Đã thanh toán", (dialog, which) -> {
-                    // Sử dụng confirmPayment nếu khách đã gọi thanh toán
-                    if ("pending".equals(paymentStatus)) {
-                        FirebaseService.getInstance().confirmPayment(order.getId(),
-                                aVoid -> {
-                                    Toast.makeText(getContext(), "Đã xác nhận thanh toán", Toast.LENGTH_SHORT).show();
-                                    if (order.getTotal() != null && order.getCustomerId() != null) {
-                                        updateLoyaltyPoints(order.getCustomerId(), order.getTotal());
-                                    }
-                                },
+
+                    OnSuccessListener<Void> paymentSuccess = aVoid -> {
+                        // Logic cộng điểm chung cho cả 2 trường hợp
+                        if (order.getCustomerId() != null && order.getTotal() != null) {
+                            FirebaseService.getInstance().updateLoyaltyPoints(
+                                    order.getCustomerId(),
+                                    order.getTotal(),
+                                    unused -> Toast.makeText(getContext(), "Thanh toán thành công & Đã cộng điểm!", Toast.LENGTH_SHORT).show()
+                            );
+                        } else {
+                            Toast.makeText(getContext(), "Thanh toán thành công!", Toast.LENGTH_SHORT).show();
+                        }
+                    };
+
+                    if ("pending".equals(order.getPaymentStatus())) {
+                        // Trường hợp khách yêu cầu thanh toán qua app
+                        FirebaseService.getInstance().confirmPayment(order.getId(), paymentSuccess,
                                 e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                     } else {
-                        updateOrderStatus(order.getId(), "paid", "Đã thanh toán");
-                        if (order.getTotal() != null && order.getCustomerId() != null) {
-                            updateLoyaltyPoints(order.getCustomerId(), order.getTotal());
-                        }
+                        // Trường hợp nhân viên bấm "Thanh toán" thủ công
+                        FirebaseService.getInstance().updateOrderStatus(order.getId(), "paid", paymentSuccess,
+                                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                     }
                 })
                 .setNegativeButton("Hủy", null)
@@ -366,22 +374,7 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
                 });
     }
     
-    private void updateLoyaltyPoints(String customerId, Double total) {
-        // Tính điểm: 10,000đ = 1 điểm
-        int pointsToAdd = (int) (total / 10000);
-        if (pointsToAdd <= 0) return;
-        
-        FirebaseService.getInstance().getDb()
-                .collection("users")
-                .document(customerId)
-                .get()
-                .addOnSuccessListener(doc -> {
-                    Long currentPoints = doc.getLong("loyaltyPoints");
-                    long newPoints = (currentPoints != null ? currentPoints : 0) + pointsToAdd;
-                    
-                    doc.getReference().update("loyaltyPoints", newPoints);
-                });
-    }
+
 
     /**
      * Trừ nguyên liệu từ kho khi bắt đầu chuẩn bị đơn hàng

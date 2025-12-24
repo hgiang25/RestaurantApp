@@ -146,18 +146,34 @@
                             android:paddingVertical="16dp"/>
 
                     </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Forgot Password -->
-                    <TextView
-                        android:id="@+id/txtForgotPassword"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Quên mật khẩu?"
-                        android:textSize="14sp"
-                        android:textColor="@color/primary"
-                        android:layout_gravity="end"
-                        android:layout_marginTop="12dp"
-                        android:padding="4dp"/>
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="12dp">
+
+                        <CheckBox
+                            android:id="@+id/cbRemember"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Ghi nhớ đăng nhập"
+                            android:textColor="@color/text_secondary"/>
+
+                        <TextView
+                            android:id="@+id/txtForgotPassword"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Quên mật khẩu?"
+                            android:textSize="14sp"
+                            android:textColor="@color/primary"/>
+                    </LinearLayout>
+
+
+
+
+
 
                     <!-- Login Button -->
                     <com.google.android.material.button.MaterialButton

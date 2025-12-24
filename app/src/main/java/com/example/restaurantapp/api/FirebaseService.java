@@ -634,6 +634,36 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
+    // Trong FirebaseService.java
+    // Trong FirebaseService.java
+
+    // Trong FirebaseService.java
+    public void updateLoyaltyPoints(String customerId, double orderTotal, OnSuccessListener<Void> successListener) {
+        if (customerId == null || customerId.isEmpty()) {
+            android.util.Log.e("LOYALTY_DEBUG", "Không thể cộng điểm: customerId bị NULL");
+            return;
+        }
+
+        int pointsToAdd = User.calculatePointsFromBill(orderTotal);
+        if (pointsToAdd <= 0) {
+            android.util.Log.d("LOYALTY_DEBUG", "Số tiền nhỏ hơn 10k, không có điểm để cộng");
+            return;
+        }
+
+        android.util.Log.d("LOYALTY_DEBUG", "Đang cộng " + pointsToAdd + " điểm cho: " + customerId);
+
+        db.collection("users").document(customerId)
+                .update("loyaltyPoints", FieldValue.increment(pointsToAdd))
+                .addOnSuccessListener(aVoid -> {
+                    android.util.Log.d("LOYALTY_DEBUG", "✅ Đã cập nhật điểm lên Firebase thành công");
+                    if (successListener != null) successListener.onSuccess(aVoid);
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("LOYALTY_DEBUG", "❌ Lỗi Firebase: " + e.getMessage());
+                    // Nếu lỗi "No document to update", có thể do ID user sai
+                });
+    }
+
     // 4️⃣ Apply voucher
     public void applyVoucherToOrder(String orderId, String voucherCode,
                                     OnSuccessListener<Void> success, OnFailureListener fail) {
