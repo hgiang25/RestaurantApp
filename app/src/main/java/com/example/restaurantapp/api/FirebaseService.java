@@ -1092,4 +1092,82 @@ public class FirebaseService {
         return "Unknown";
     }
 
+    /**
+     * Lấy danh sách tất cả món ăn và nguyên liệu chi tiết để copy/export
+     * @param callback Callback trả về danh sách String
+     * @param fail Callback lỗi
+     */
+    public void exportMenuWithIngredients(OnSuccessListener<List<String>> callback,
+                                          OnFailureListener fail) {
+        List<String> exportList = new ArrayList<>();
+
+        // Lấy tất cả menu
+        db.collection("menu").get()
+                .addOnSuccessListener(menuSnapshot -> {
+                    if (menuSnapshot.isEmpty()) {
+                        callback.onSuccess(Collections.singletonList("Chưa có món ăn nào."));
+                        return;
+                    }
+
+                    final int[] processedCount = {0};
+                    for (DocumentSnapshot menuDoc : menuSnapshot.getDocuments()) {
+                        String menuName = menuDoc.getString("name");
+                        Double price = menuDoc.getDouble("price");
+                        String category = menuDoc.getString("category");
+                        Boolean available = menuDoc.getBoolean("available");
+
+                        String menuHeader = String.format("Món: %s | Giá: %.0f | Danh mục: %s | Có bán: %s",
+                                menuName != null ? menuName : "Không tên",
+                                price != null ? price : 0,
+                                category != null ? category : "Không xác định",
+                                available != null && available ? "Có" : "Không");
+                        exportList.add(menuHeader);
+
+                        // Lấy công thức món
+                        String menuId = menuDoc.getId();
+                        getRecipeByMenuItemId(menuId,
+                                recipeSnapshot -> {
+                                    if (!recipeSnapshot.isEmpty()) {
+                                        DocumentSnapshot recipeDoc = recipeSnapshot.getDocuments().get(0);
+                                        List<Map<String, Object>> ingredients =
+                                                (List<Map<String, Object>>) recipeDoc.get("ingredients");
+                                        if (ingredients != null && !ingredients.isEmpty()) {
+                                            for (Map<String, Object> ing : ingredients) {
+                                                String ingName = (String) ing.get("ingredientName");
+                                                Object qtyObj = ing.get("quantityRequired");
+                                                String unit = (String) ing.get("unit"); // nếu lưu trong recipe
+                                                double qty = 0;
+                                                if (qtyObj instanceof Double) qty = (Double) qtyObj;
+                                                else if (qtyObj instanceof Long) qty = ((Long) qtyObj).doubleValue();
+
+                                                exportList.add(String.format("   - %s: %.1f %s",
+                                                        ingName != null ? ingName : "Nguyên liệu không tên",
+                                                        qty,
+                                                        unit != null ? unit : ""));
+                                            }
+                                        } else {
+                                            exportList.add("   - Chưa có nguyên liệu");
+                                        }
+                                    } else {
+                                        exportList.add("   - Chưa có công thức");
+                                    }
+
+                                    processedCount[0]++;
+                                    if (processedCount[0] >= menuSnapshot.size()) {
+                                        callback.onSuccess(exportList);
+                                    }
+                                },
+                                e -> {
+                                    exportList.add("   - Lỗi lấy công thức: " + e.getMessage());
+                                    processedCount[0]++;
+                                    if (processedCount[0] >= menuSnapshot.size()) {
+                                        callback.onSuccess(exportList);
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(fail);
+    }
+
+
 }

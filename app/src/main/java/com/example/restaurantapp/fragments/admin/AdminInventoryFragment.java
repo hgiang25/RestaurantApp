@@ -54,6 +54,8 @@ public class AdminInventoryFragment extends Fragment {
 
         loadInventory(""); // Bắt đầu với danh sách đầy đủ
 
+
+
         edtSearch = view.findViewById(R.id.edtSearchInventory);
 
 // Gắn TextWatcher để tìm kiếm theo tên nguyên liệu
@@ -74,6 +76,36 @@ public class AdminInventoryFragment extends Fragment {
 
         return view;
     }
+    private void listAllInventoryItems() {
+        FirebaseService.getInstance().getDb()
+                .collection("inventory")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        Toast.makeText(getContext(), "Chưa có nguyên liệu nào trong kho.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("Danh sách nguyên liệu:\n");
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        InventoryModel item = doc.toObject(InventoryModel.class);
+                        if (item != null) {
+                            String id = doc.getId();
+                            String name = item.getName();
+                            sb.append("Tên: ").append(name).append(" | ID: ").append(id).append("\n");
+                        }
+                    }
+
+                    // Hiển thị danh sách bằng Toast hoặc log
+                    android.util.Log.d("AdminInventory", sb.toString());
+                    Toast.makeText(getContext(), sb.toString(), Toast.LENGTH_LONG).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "Lỗi khi lấy danh sách nguyên liệu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
 
     private void loadInventory(@Nullable String keyword) {
         // Hủy listener cũ nếu có

@@ -2,6 +2,7 @@ package com.example.restaurantapp.fragments.admin;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,12 +62,124 @@ public class AdminRecipeFragment extends Fragment {
         initViews(view);
         setupRecyclerView();
         loadData();
+//        addSampleRecipes();
 
         fabAddRecipe.setOnClickListener(v -> showAddRecipeDialog(null));
         btnSyncStatus.setOnClickListener(v -> syncMenuItemsStatus());
 
         return view;
     }
+
+    private void addSampleRecipes() {
+        // Danh sách món ăn (chỉ những món ăn thực tế, không phải nước/kem)
+        String[][] menuItems = {
+                {"Cơm trộn Hàn Quốc", "2uDgaMbeimTB1OKAnRRE"},
+                {"Bò lúc lắc", "3uGAvzPbhQkHSf49lowq"},
+                {"Mì xào", "4cS2rYV69GmxNPWDpnp6"},
+                {"Khoai tây chiên", "4j56txF2h3a43QTAujtB"},
+                {"Cơm gà", "6cKQpy8vnXedAgr5ngbI"},
+                {"Bún chả", "7o1xrbtwXYJTCBvMuR6B"},
+                {"Cá chiên xốt chua ngọt", "9uOKJJYRJsX0sLI1bImm"},
+                {"Hamburger", "Gbm5TcwwVK2M14kaS3vf"},
+                {"Tôm rang muối", "J3PICPiK7aYH3HUeEIsr"},
+                {"Phở bò", "JESoq7Zpk5X7jt9sZBrD"},
+                {"Gỏi cuốn", "K4xqjsPdfycrewBh9zrb"},
+                {"Nem rán", "Nmudr2jaR9We5d8c86HQ"},
+                {"Salad trộn", "U6HLmrAyRoLx2mp1bDYz"},
+                {"Mỳ ống sốt cà chua", "Uv2YDR4veBZNC9DVOSD9"},
+                {"Chè thập cẩm", "V6Kvl1FU4vwY7PTmJJKu"},
+                {"Bánh flan", "b9cZUGqFljqYDoNl7xlI"},
+                {"Hotdog", "eel8LjsXb9yw4qyuNbgS"},
+                {"Bánh xèo", "fuMe3ppGXSf4CGTCG0oI"},
+                {"Xôi xoài", "fxGH7XIqCbEj9PudQCUn"},
+                {"Snack khoai tây", "hICMXI2cyQv0KKtJdAUD"},
+                {"Pizza mini", "iU5i2pf4tEMj3G4zMnzy"},
+                {"Bánh mì kẹp thịt", "kOY0ayu8tLhfTvqlYcdi"},
+                {"Sườn xào chua ngọt", "l391N5xwPTIQYX8X1S59"},
+                {"Súp cua", "mxmBsWXRPGLRAe9oAJmR"},
+                {"Cà phê đen", "nxspOrGOQuS3X4eqPcKZ"},
+                {"Xúc xích", "oMUpqx2hzkPK6NvclDFQ"},
+                {"Bánh bao", "qjhmPUT4Cv3p938gVaRK"},
+                {"Bánh crepe", "rRVanUvzEqt92m4dLg9Z"},
+                {"Bánh trứng", "s2CbiVWgsmxrGEg6srJC"},
+                {"Bắp rang bơ", "t2BvVzJMKq0mqrfzM1mi"},
+                {"Cà phê sữa", "usjRHPghrslGSDL8undz"},
+                {"Bánh ngọt", "vRl9LPkTXHBairQLb6q"},
+                {"Chả giò rế", "vuMPvc5Y3VsicOK3uh7u"},
+                {"Bánh bông lan", "xfIWmp828BtU4gh9POMT"},
+                {"Gà nướng mật ong", "yJwc1tQZWLfmPQsYTg5u"},
+                {"Xôi gà", "yvNSE86iMghp10m3drbF"}
+        };
+
+        // Danh sách nguyên liệu mẫu
+        String[][] ingredients = {
+                {"Gạo", "2h9qOPxsVEVw3DvOlaoj"},
+                {"Hành tím", "4XlgEeIrB44hl9RTBVqW"},
+                {"Bún", "77VmEzigmPjqV9Wl1fC3"},
+                {"Dầu ăn", "8nptQZIakdHAFjBac87q"},
+                {"Mực", "8tdRDA4vt7jTjugAQpFg"},
+                {"Muối", "BaJ972ycM2N7LwHN2R3g"},
+                {"Mì ống", "CsgVPbkAN7XbqmHqJ2qp"},
+                {"Trứng gà", "DWHNEztDxUu1Jqm0k8sF"},
+                {"Bột năng", "DYB8tEXfVSWut2eRrD2Z"},
+                {"Sữa tươi", "ELCaUZ2u3e84nZBcmfP7"},
+                {"Nước mắm", "FKRXdznAJmQqfCMhzYQx"},
+                {"Cà chua", "M1aiDtbqVXSaoTE7tFfq"},
+                {"Rau muống", "OYn0Ksv2WZdCdrRdbFlb"},
+                {"Ớt đỏ", "P5X9e2v1831ZkYdTWI8d"},
+                {"Miến", "PvILiMrKjOfp2TzAXZZV"},
+                {"Carrot", "SUUV87w7qqrFHZxU4ao2"},
+                {"Thịt heo", "SlqfQJvqAJCoBkDMaRoR"},
+                {"Tiêu", "T0QEofTNfXPmqMcXDB1K"},
+                {"Bánh ngọt", "bL2R7EkfVaKs0k8zY2Na"},
+                {"Tôm sú", "ck9eMZJa95rnDYJtFoWg"},
+                {"Thịt bò", "cpllcwYr0x9b1uJNwazd"},
+                {"Rau sống", "cqtpZFLgWOq2XswcRT4D"},
+                {"Bột mì", "fIhtapMAeLw4nCObDHL3"},
+                {"Đường", "hgKTOlGLNQCkOGVZRrr9"},
+                {"Dưa leo", "jsLLmtd2Y9whVFyt3M9j"},
+                {"Thịt gà", "keBvYgh2ed07WpWc9KIn"},
+                {"Gà nguyên con", "oH9X9cKqbXIrwQMJTNrY"},
+                {"Bánh mì", "pNLYilmttVxjSvbVGJmL"},
+                {"Tỏi", "phbV5IkZ6kgV9XKydnKo"},
+                {"Phô mai", "tdIx54pTMugCMT7KIfJP"},
+                {"Cá hồi", "uapjCXk4IJYC4AqidT8G"}
+        };
+
+        // Tạo công thức cho mỗi món ăn
+        for (String[] menu : menuItems) {
+            String menuName = menu[0];
+            String menuId = menu[1];
+
+            // Chọn 3-5 nguyên liệu ngẫu nhiên từ list nguyên liệu
+            List<Map<String, Object>> recipeIngredients = new ArrayList<>();
+            for (int i = 0; i < 3; i++) {
+                String[] ing = ingredients[i]; // đơn giản chọn 3 nguyên liệu đầu (có thể random)
+                Map<String, Object> ingMap = new HashMap<>();
+                ingMap.put("ingredientId", ing[1]);
+                ingMap.put("ingredientName", ing[0]);
+                ingMap.put("quantityRequired", 1.0 + i); // quantity tùy chỉnh
+                ingMap.put("unit", "kg"); // unit tùy chỉnh
+                recipeIngredients.add(ingMap);
+            }
+
+            Map<String, Object> recipeData = new HashMap<>();
+            recipeData.put("menuItemId", menuId);
+            recipeData.put("menuItemName", menuName);
+            recipeData.put("ingredients", recipeIngredients);
+
+            FirebaseService.getInstance().getDb()
+                    .collection("recipes")
+                    .add(recipeData)
+                    .addOnSuccessListener(ref ->
+                            Log.d("AddRecipe", "Added recipe for " + menuName))
+                    .addOnFailureListener(e ->
+                            Log.e("AddRecipe", "Error adding recipe for " + menuName + ": " + e.getMessage()));
+        }
+
+        Toast.makeText(getContext(), "Đã gửi yêu cầu thêm công thức mẫu", Toast.LENGTH_SHORT).show();
+    }
+
 
     private void initViews(View view) {
         recyclerRecipes = view.findViewById(R.id.recyclerRecipes);

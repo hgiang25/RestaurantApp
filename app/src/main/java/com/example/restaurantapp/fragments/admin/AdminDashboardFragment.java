@@ -1,6 +1,7 @@
 package com.example.restaurantapp.fragments.admin;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.restaurantapp.R;
 import com.example.restaurantapp.api.FirebaseService;
+import com.example.restaurantapp.models.InventoryModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentSnapshot;
 
@@ -21,6 +23,12 @@ import com.example.restaurantapp.fragments.admin.AdminTablesFragment;
 import com.example.restaurantapp.fragments.admin.AdminMenuFragment;
 import com.example.restaurantapp.fragments.admin.AdminStaffFragment;
 import com.example.restaurantapp.fragments.admin.AdminReportsFragment;
+
+import com.example.restaurantapp.api.FirebaseService;
+import com.example.restaurantapp.models.MenuItem;
+import com.google.firebase.firestore.DocumentSnapshot;
+
+import java.util.List;
 
 
 public class AdminDashboardFragment extends Fragment {
@@ -69,11 +77,46 @@ public class AdminDashboardFragment extends Fragment {
                     .setFragmentResult("open_more", args);
         });
 
+//        FirebaseService.getInstance().exportMenuWithIngredients(
+//                result -> {
+//                    for (String line : result) {
+//                        System.out.println(line); // hoặc copy sang clipboard
+//                    }
+//                },
+//                error -> Log.e("EXPORT", "Lỗi: " + error.getMessage())
+//        );
+
 
         loadDashboardData();
 
         return view;
     }
+
+    public static void listAllMenuItems() {
+        FirebaseService.getInstance().getDb()
+                .collection("menu")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        System.out.println("Chưa có món ăn nào trong menu.");
+                        return;
+                    }
+
+                    System.out.println("Danh sách món ăn:");
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        MenuItem item = doc.toObject(MenuItem.class);
+                        if (item != null) {
+                            String id = doc.getId();
+                            String name = item.getName();
+                            System.out.println("Tên: " + name + " | ID: " + id);
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    System.out.println("Lỗi khi lấy danh sách món ăn: " + e.getMessage());
+                });
+    }
+
 
     private void selectBottomNavItem(int menuItemId) {
         if (!isAdded()) return;
