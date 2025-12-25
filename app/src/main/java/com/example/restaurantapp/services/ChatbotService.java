@@ -44,13 +44,21 @@ public class ChatbotService {
     }
 
     private void loadDataFromFirestore() {
-        // Load menu
+        // Load menu (không filter, load tất cả rồi check available)
         FirebaseService.getInstance().getDb().collection("menu")
-                .whereEqualTo("isAvailable", true)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     menuCache.clear();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        // Check available field
+                        Boolean isAvailable = doc.getBoolean("available");
+                        if (isAvailable == null) {
+                            isAvailable = doc.getBoolean("isAvailable");
+                        }
+                        if (isAvailable != null && !isAvailable) {
+                            continue; // Skip món không available
+                        }
+                        
                         Map<String, Object> item = new HashMap<>();
                         item.put("name", doc.getString("name"));
                         item.put("price", doc.getDouble("price"));
@@ -60,13 +68,21 @@ public class ChatbotService {
                     }
                 });
 
-        // Load promotions
+        // Load promotions (không filter, load tất cả rồi check active)
         FirebaseService.getInstance().getDb().collection("promotions")
-                .whereEqualTo("isActive", true)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     promotionCache.clear();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        // Check active field
+                        Boolean isActive = doc.getBoolean("active");
+                        if (isActive == null) {
+                            isActive = doc.getBoolean("isActive");
+                        }
+                        if (isActive != null && !isActive) {
+                            continue; // Skip khuyến mãi không active
+                        }
+                        
                         Map<String, Object> promo = new HashMap<>();
                         promo.put("name", doc.getString("name"));
                         promo.put("description", doc.getString("description"));

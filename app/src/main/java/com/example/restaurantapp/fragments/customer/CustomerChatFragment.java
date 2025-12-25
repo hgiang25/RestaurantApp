@@ -22,6 +22,7 @@ import com.example.restaurantapp.R;
 import com.example.restaurantapp.adapters.ChatAdapter;
 import com.example.restaurantapp.models.ChatMessage;
 import com.example.restaurantapp.services.ChatbotService;
+import com.example.restaurantapp.services.GeminiService;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -54,6 +55,9 @@ public class CustomerChatFragment extends Fragment {
         
         // Initialize chatbot service
         chatbotService = new ChatbotService(requireContext());
+        
+        // Refresh dữ liệu từ Firebase để đảm bảo chatbot có thông tin mới nhất
+        GeminiService.getInstance().refreshData();
         
         // Welcome message
         addBotMessage("Xin chào! 👋 Tôi là trợ lý ảo của nhà hàng.\n\nTôi có thể giúp bạn về thực đơn, đặt bàn, khuyến mãi, và nhiều thứ khác. Hãy hỏi tôi bất cứ điều gì!");
