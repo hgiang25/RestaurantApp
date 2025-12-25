@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="72dp"
+        android:layout_marginBottom="110dp"
         android:contentDescription="Trợ lý AI"
         app:srcCompat="@drawable/ic_chat_bot"
         app:fabSize="normal"

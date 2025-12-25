@@ -69,10 +69,7 @@ public class LoginActivity extends AppCompatActivity {
             edtPassword.setText(prefs.getString("saved_password", ""));
             cbRemember.setChecked(true);
 
-            // Auto login nếu đã đăng nhập
-            if (api.isLoggedIn()) {
-                redirectToRoleActivity();
-            }
+
         }
 
         // Xử lý login

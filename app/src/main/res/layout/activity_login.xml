@@ -19,7 +19,7 @@
             <!-- Header with gradient background -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="280dp"
+                android:layout_height="400dp"
                 android:background="@drawable/gradient_primary">
 
                 <LinearLayout
@@ -28,34 +28,35 @@
                     android:layout_gravity="center"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:padding="24dp">
+                    android:padding="50dp">
 
                     <!-- App Icon/Logo -->
+
                     <ImageView
-                        android:layout_width="111dp"
-                        android:layout_height="114dp"
+                        android:layout_width="252dp"
+                        android:layout_height="224dp"
                         android:background="@drawable/bg_card_elevated"
                         android:elevation="8dp"
-                        android:padding="16dp"
-                        android:src="@drawable/logo" />
+                        android:padding="10dp"
+                        android:src="@drawable/logo1" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Restaurant App"
-                        android:textSize="28sp"
+                        android:textSize="40sp"
                         android:textStyle="bold"
                         android:textColor="@color/white"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="1dp"
                         android:fontFamily="sans-serif-medium"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Quản lý nhà hàng thông minh"
-                        android:textSize="14sp"
+                        android:textSize="16sp"
                         android:textColor="#B8FFFFFF"
-                        android:layout_marginTop="4dp"/>
+                        android:layout_marginTop="0dp"/>
 
                 </LinearLayout>
 

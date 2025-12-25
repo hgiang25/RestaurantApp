@@ -17,7 +17,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:padding="16dp">
+            android:padding="25dp">
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/imgBotAvatar"
@@ -70,7 +70,7 @@
         android:id="@+id/recyclerMessages"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="100dp"
         android:layout_marginBottom="70dp"
         android:padding="12dp"
         android:clipToPadding="false"/>

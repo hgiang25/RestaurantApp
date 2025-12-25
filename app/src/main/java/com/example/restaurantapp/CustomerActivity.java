@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,6 +29,10 @@ public class CustomerActivity extends AppCompatActivity {
     BottomNavigationView bottomNav;
     FloatingActionButton fabChat;
     private boolean isChatOpen = false;
+    private float dX, dY;
+    private int lastAction;
+    private boolean isDragging = false;
+
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -45,6 +50,35 @@ public class CustomerActivity extends AppCompatActivity {
 
         bottomNav = findViewById(R.id.bottomNav);
         fabChat = findViewById(R.id.fabChat);
+
+        fabChat.setOnTouchListener((view, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    dX = view.getX() - event.getRawX();
+                    dY = view.getY() - event.getRawY();
+                    lastAction = MotionEvent.ACTION_DOWN;
+                    isDragging = false;
+                    return true;
+
+                case MotionEvent.ACTION_MOVE:
+                    view.setX(event.getRawX() + dX);
+                    view.setY(event.getRawY() + dY);
+                    lastAction = MotionEvent.ACTION_MOVE;
+                    isDragging = true;
+                    return true;
+
+                case MotionEvent.ACTION_UP:
+                    if (!isDragging && lastAction == MotionEvent.ACTION_DOWN) {
+                        // Nếu KHÔNG kéo → coi là click
+                        view.performClick();
+                    }
+                    return true;
+
+                default:
+                    return false;
+            }
+        });
+
 
         // Load fragment mặc định
         if (savedInstanceState == null) {

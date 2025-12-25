@@ -18,26 +18,26 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="30dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
                     android:text="🍽️ Thực đơn"
-                    android:textSize="26sp"
-                    android:textStyle="bold"
                     android:textColor="@color/white"
-                    android:fontFamily="sans-serif-medium"/>
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
                     android:text="Khám phá các món ăn ngon"
-                    android:textSize="14sp"
                     android:textColor="#B8FFFFFF"
-                    android:layout_marginTop="4dp"/>
+                    android:textSize="14sp" />
 
                 <!-- Search Bar -->
                 <com.google.android.material.card.MaterialCardView
@@ -51,15 +51,15 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:orientation="horizontal"
                         android:gravity="center_vertical"
+                        android:orientation="horizontal"
                         android:paddingHorizontal="16dp">
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:src="@drawable/ic_search"
-                            app:tint="@color/text_hint"/>
+                            app:tint="@color/text_hint" />
 
                         <EditText
                             android:id="@+id/edtSearch"
@@ -69,7 +69,7 @@
                             android:background="@null"
                             android:hint="Tìm món ăn..."
                             android:textColorHint="@color/text_hint"
-                            android:textSize="14sp"/>
+                            android:textSize="14sp" />
 
                     </LinearLayout>
 
@@ -117,7 +117,7 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
         android:layout_marginEnd="20dp"
-        android:layout_marginBottom="76dp"
+        android:layout_marginBottom="110dp"
         android:text="Giỏ hàng"
         android:textColor="@color/white"
         app:icon="@drawable/ic_cart"
