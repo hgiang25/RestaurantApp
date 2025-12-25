@@ -12,7 +12,16 @@ import androidx.fragment.app.Fragment;
 
 import com.example.restaurantapp.R;
 import com.example.restaurantapp.api.FirebaseService;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.DocumentSnapshot;
+
+import android.content.Intent;
+
+import com.example.restaurantapp.fragments.admin.AdminTablesFragment;
+import com.example.restaurantapp.fragments.admin.AdminMenuFragment;
+import com.example.restaurantapp.fragments.admin.AdminStaffFragment;
+import com.example.restaurantapp.fragments.admin.AdminReportsFragment;
+
 
 public class AdminDashboardFragment extends Fragment {
 
@@ -31,10 +40,60 @@ public class AdminDashboardFragment extends Fragment {
         txtPendingOrders = view.findViewById(R.id.txtPendingOrders);
         txtFreeTables = view.findViewById(R.id.txtFreeTables); // thêm dòng này
 
+        // Quick Actions
+        View btnQuickAddTable = view.findViewById(R.id.btnQuickAddTable);
+        View btnQuickAddMenu = view.findViewById(R.id.btnQuickAddMenu);
+        View btnQuickAddStaff = view.findViewById(R.id.btnQuickAddStaff);
+        View btnQuickReports = view.findViewById(R.id.btnQuickReports);
+
+        btnQuickAddTable.setOnClickListener(v ->
+                selectBottomNavItem(R.id.nav_tables)
+        );
+
+        btnQuickAddMenu.setOnClickListener(v ->
+                selectBottomNavItem(R.id.nav_menu)
+        );
+
+        btnQuickAddStaff.setOnClickListener(v ->
+                selectBottomNavItem(R.id.nav_staff)
+        );
+
+        btnQuickReports.setOnClickListener(v -> {
+            Bundle args = new Bundle();
+            args.putBoolean("open_reports", true);
+
+            selectBottomNavItem(R.id.nav_more);
+
+            requireActivity()
+                    .getSupportFragmentManager()
+                    .setFragmentResult("open_more", args);
+        });
+
+
         loadDashboardData();
 
         return view;
     }
+
+    private void selectBottomNavItem(int menuItemId) {
+        if (!isAdded()) return;
+
+        BottomNavigationView bottomNav =
+                requireActivity().findViewById(R.id.bottomNav);
+
+        bottomNav.setSelectedItemId(menuItemId);
+    }
+
+
+    private void openFragment(Fragment fragment) {
+        requireActivity()
+                .getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
 
     private void loadDashboardData() {
         // Load tổng số đơn hàng

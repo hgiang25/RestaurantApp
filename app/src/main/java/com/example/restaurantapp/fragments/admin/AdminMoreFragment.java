@@ -33,6 +33,20 @@ import java.util.Map;
 
 public class AdminMoreFragment extends Fragment {
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        getParentFragmentManager()
+                .setFragmentResultListener("open_more", this, (key, bundle) -> {
+                    boolean openReports = bundle.getBoolean("open_reports", false);
+                    if (openReports) {
+                        navigateToFragment(new AdminReportsFragment());
+                    }
+                });
+    }
+
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
