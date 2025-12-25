@@ -195,47 +195,84 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
     @Override
     public void onPreparing(OrderModel order) {
-        android.util.Log.d("StaffOrders", "=== onPreparing ĐƯỢC GỌI ===");
-        android.util.Log.d("StaffOrders", "Order ID: " + order.getId());
-        android.util.Log.d("StaffOrders", "Order status: " + order.getStatus());
-        
+
         List<?> items = order.getItemsForDisplay();
-        
-        // Kiểm tra nguyên liệu trước khi chuẩn bị
-        FirebaseService.getInstance().checkIngredientsAvailability(items,
-                missingList -> {
-                    if (missingList != null && !missingList.isEmpty()) {
-                        // Thiếu nguyên liệu - hiển thị cảnh báo
-                        StringBuilder message = new StringBuilder();
-                        message.append("Không đủ nguyên liệu để chuẩn bị đơn hàng:\n\n");
-                        for (String missing : missingList) {
-                            message.append("• ").append(missing).append("\n");
+
+        if (items == null || items.isEmpty()) {
+            Toast.makeText(getContext(), "Đơn hàng không có món", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1️⃣ CHECK CÔNG THỨC (GIỐNG ADMIN)
+        FirebaseService.getInstance().checkRecipeExistence(
+                items,
+                missingRecipes -> {
+
+                    if (missingRecipes != null && !missingRecipes.isEmpty()) {
+                        StringBuilder msg = new StringBuilder();
+                        msg.append("❌ Không thể bắt đầu nấu vì các món sau chưa có công thức:\n\n");
+                        for (String s : missingRecipes) {
+                            msg.append("• ").append(s).append("\n");
                         }
-                        message.append("\nVui lòng báo Admin nhập thêm nguyên liệu!");
 
                         new AlertDialog.Builder(requireContext())
-                                .setTitle("⚠️ Thiếu nguyên liệu")
-                                .setMessage(message.toString())
+                                .setTitle("Thiếu công thức")
+                                .setMessage(msg.toString())
                                 .setPositiveButton("Đóng", null)
                                 .setIcon(android.R.drawable.ic_dialog_alert)
                                 .show();
-                    } else {
-                        // Đủ nguyên liệu - tiến hành trừ kho
-                        Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
-                        deductIngredientsForOrder(order, () -> {
-                            updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
-                        });
+                        return;
                     }
+
+                    // 2️⃣ CHECK KHO
+                    FirebaseService.getInstance().checkIngredientsAvailability(
+                            items,
+                            missingIngredients -> {
+
+                                if (missingIngredients != null && !missingIngredients.isEmpty()) {
+                                    StringBuilder message = new StringBuilder();
+                                    message.append("⚠️ Không đủ nguyên liệu:\n\n");
+                                    for (String missing : missingIngredients) {
+                                        message.append("• ").append(missing).append("\n");
+                                    }
+                                    message.append("\nVui lòng báo Admin nhập thêm nguyên liệu!");
+
+                                    new AlertDialog.Builder(requireContext())
+                                            .setTitle("Thiếu nguyên liệu")
+                                            .setMessage(message.toString())
+                                            .setPositiveButton("Đóng", null)
+                                            .setIcon(android.R.drawable.ic_dialog_alert)
+                                            .show();
+                                    return;
+                                }
+
+                                // 3️⃣ TRỪ KHO
+                                Toast.makeText(getContext(), "Đang trừ kho...", Toast.LENGTH_SHORT).show();
+
+                                deductIngredientsForOrder(order, () -> {
+                                    // 4️⃣ OK → CHUYỂN TRẠNG THÁI
+                                    updateOrderStatus(
+                                            order.getId(),
+                                            "preparing",
+                                            "Đơn hàng đang được chuẩn bị"
+                                    );
+                                });
+                            },
+                            e -> Toast.makeText(
+                                    getContext(),
+                                    "Lỗi kiểm tra kho",
+                                    Toast.LENGTH_SHORT
+                            ).show()
+                    );
                 },
-                e -> {
-                    android.util.Log.e("StaffOrders", "Lỗi kiểm tra nguyên liệu: " + e.getMessage());
-                    // Nếu lỗi kiểm tra, vẫn cho phép chuẩn bị (để không block)
-                    Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
-                    deductIngredientsForOrder(order, () -> {
-                        updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
-                    });
-                });
+                e -> Toast.makeText(
+                        getContext(),
+                        "Lỗi kiểm tra công thức",
+                        Toast.LENGTH_SHORT
+                ).show()
+        );
     }
+
 
     @Override
     public void onServed(OrderModel order) {
