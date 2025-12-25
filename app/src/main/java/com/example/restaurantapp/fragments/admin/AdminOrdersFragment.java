@@ -43,13 +43,13 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
     private LinearLayout emptyState;
     private TextView tvEmptyMessage, tvTotalRevenue, tvOrderCount;
     private ProgressBar progressBar;
-    
+
     private Chip chipAll, chipPending, chipPreparing, chipServed, chipPaid, chipCancelled;
-    
+
     private StaffOrderAdapter adapter;
     private List<OrderModel> allOrders = new ArrayList<>();
     private List<OrderModel> filteredOrders = new ArrayList<>();
-    
+
     private ListenerRegistration ordersListener;
     private String currentFilter = "all";
 
@@ -65,7 +65,7 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
         return view;
     }
-    
+
     private void initViews(View view) {
         recyclerView = view.findViewById(R.id.recyclerOrders);
         emptyState = view.findViewById(R.id.emptyState);
@@ -73,17 +73,17 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
         progressBar = view.findViewById(R.id.progressBar);
         tvTotalRevenue = view.findViewById(R.id.tvTotalRevenue);
         tvOrderCount = view.findViewById(R.id.tvOrderCount);
-        
+
         chipAll = view.findViewById(R.id.chipAll);
         chipPending = view.findViewById(R.id.chipPending);
         chipPreparing = view.findViewById(R.id.chipPreparing);
         chipServed = view.findViewById(R.id.chipServed);
         chipPaid = view.findViewById(R.id.chipPaid);
         chipCancelled = view.findViewById(R.id.chipCancelled);
-        
+
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
     }
-    
+
     private void setupChips() {
         View.OnClickListener chipListener = v -> {
             if (v == chipAll) currentFilter = "all";
@@ -92,10 +92,10 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
             else if (v == chipServed) currentFilter = "served";
             else if (v == chipPaid) currentFilter = "paid";
             else if (v == chipCancelled) currentFilter = "cancelled";
-            
+
             filterOrders();
         };
-        
+
         chipAll.setOnClickListener(chipListener);
         chipPending.setOnClickListener(chipListener);
         chipPreparing.setOnClickListener(chipListener);
@@ -103,7 +103,7 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
         chipPaid.setOnClickListener(chipListener);
         chipCancelled.setOnClickListener(chipListener);
     }
-    
+
     private void setupAdapter() {
         adapter = new StaffOrderAdapter(filteredOrders, this);
         recyclerView.setAdapter(adapter);
@@ -112,18 +112,18 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
     private void loadOrders() {
         if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
         if (emptyState != null) emptyState.setVisibility(View.GONE);
-        
+
         if (ordersListener != null) {
             ordersListener.remove();
         }
-        
+
         // Admin sees all orders
         ordersListener = FirebaseService.getInstance().getDb()
                 .collection("orders")
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (progressBar != null) progressBar.setVisibility(View.GONE);
-                    
+
                     if (error != null || value == null || !isAdded()) return;
 
                     allOrders.clear();
@@ -131,33 +131,33 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                         OrderModel order = doc.toObject(OrderModel.class);
                         if (order != null) {
                             order.setId(doc.getId());
-                            
+
                             // Fix: Lấy items trực tiếp từ document vì toObject không map đúng List<Map>
                             Object itemsObj = doc.get("items");
                             if (itemsObj instanceof List) {
                                 order.setRawItems((List<?>) itemsObj);
                             }
-                            
+
                             allOrders.add(order);
                         }
                     }
-                    
+
                     updateStatistics();
                     filterOrders();
                 });
     }
-    
+
     private void updateStatistics() {
         // Calculate today's revenue
         double todayRevenue = 0;
         int todayOrders = 0;
-        
+
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 0);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
         Date todayStart = calendar.getTime();
-        
+
         for (OrderModel order : allOrders) {
             if (order.getCreatedAt() != null && order.getCreatedAt().toDate().after(todayStart)) {
                 if ("paid".equals(order.getStatus()) && order.getTotal() != null) {
@@ -166,7 +166,7 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                 todayOrders++;
             }
         }
-        
+
         if (tvTotalRevenue != null) {
             tvTotalRevenue.setText(String.format(Locale.getDefault(), "%,.0fđ", todayRevenue));
         }
@@ -174,13 +174,13 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
             tvOrderCount.setText(String.valueOf(todayOrders));
         }
     }
-    
+
     private void filterOrders() {
         filteredOrders.clear();
-        
+
         for (OrderModel order : allOrders) {
             String status = order.getStatus();
-            
+
             if ("all".equals(currentFilter)) {
                 filteredOrders.add(order);
             } else if ("pending".equals(currentFilter)) {
@@ -191,7 +191,7 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                 filteredOrders.add(order);
             }
         }
-        
+
         // Update UI
         if (filteredOrders.isEmpty()) {
             if (emptyState != null) emptyState.setVisibility(View.VISIBLE);
@@ -201,7 +201,7 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
             if (emptyState != null) emptyState.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
         }
-        
+
         adapter.updateData(filteredOrders);
     }
 
@@ -219,46 +219,95 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
     @Override
     public void onPreparing(OrderModel order) {
-        android.util.Log.d("AdminOrders", "=== onPreparing ĐƯỢC GỌI ===");
-        android.util.Log.d("AdminOrders", "Order ID: " + order.getId());
-        
+
+        android.util.Log.d("AdminOrders", "=== onPreparing ===");
+
         List<?> items = order.getItemsForDisplay();
-        
-        // Kiểm tra nguyên liệu trước khi chuẩn bị
-        FirebaseService.getInstance().checkIngredientsAvailability(items,
-                missingList -> {
-                    if (missingList != null && !missingList.isEmpty()) {
-                        // Thiếu nguyên liệu - hiển thị cảnh báo
-                        StringBuilder message = new StringBuilder();
-                        message.append("Không đủ nguyên liệu để chuẩn bị đơn hàng:\n\n");
-                        for (String missing : missingList) {
-                            message.append("• ").append(missing).append("\n");
+
+        if (items == null || items.isEmpty()) {
+            Toast.makeText(getContext(), "Đơn hàng không có món", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1️⃣ CHECK CÔNG THỨC
+        FirebaseService.getInstance().checkRecipeExistence(
+                items,
+                missingRecipes -> {
+
+                    if (missingRecipes != null && !missingRecipes.isEmpty()) {
+                        StringBuilder msg = new StringBuilder();
+                        msg.append("❌ Không thể bắt đầu nấu vì các món sau chưa có công thức:\n\n");
+                        for (String s : missingRecipes) {
+                            msg.append("• ").append(s).append("\n");
                         }
-                        message.append("\nVui lòng nhập thêm nguyên liệu vào kho!");
 
                         new AlertDialog.Builder(requireContext())
-                                .setTitle("⚠️ Thiếu nguyên liệu")
-                                .setMessage(message.toString())
+                                .setTitle("Thiếu công thức")
+                                .setMessage(msg.toString())
                                 .setPositiveButton("Đóng", null)
                                 .setIcon(android.R.drawable.ic_dialog_alert)
                                 .show();
-                    } else {
-                        // Đủ nguyên liệu - tiến hành trừ kho
-                        Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
-                        deductIngredientsForOrder(order, () -> {
-                            updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
-                        });
+                        return;
                     }
+
+                    // 2️⃣ CHECK KHO
+                    FirebaseService.getInstance().checkIngredientsAvailability(
+                            items,
+                            missingIngredients -> {
+
+                                if (missingIngredients != null && !missingIngredients.isEmpty()) {
+                                    StringBuilder message = new StringBuilder();
+                                    message.append("⚠️ Không đủ nguyên liệu:\n\n");
+                                    for (String missing : missingIngredients) {
+                                        message.append("• ").append(missing).append("\n");
+                                    }
+
+                                    new AlertDialog.Builder(requireContext())
+                                            .setTitle("Thiếu nguyên liệu")
+                                            .setMessage(message.toString())
+                                            .setPositiveButton("Đóng", null)
+                                            .setIcon(android.R.drawable.ic_dialog_alert)
+                                            .show();
+                                    return;
+                                }
+
+                                // 3️⃣ TRỪ KHO
+                                Toast.makeText(getContext(), "Đang trừ kho...", Toast.LENGTH_SHORT).show();
+
+                                deductIngredientsForOrder(order, success -> {
+                                    if (!success) {
+                                        Toast.makeText(
+                                                getContext(),
+                                                "❌ Trừ kho thất bại. Đơn chưa được chuyển trạng thái",
+                                                Toast.LENGTH_LONG
+                                        ).show();
+                                        return;
+                                    }
+
+                                    // 4️⃣ OK → CHUYỂN TRẠNG THÁI
+                                    updateOrderStatus(
+                                            order.getId(),
+                                            "preparing",
+                                            "Đơn hàng đang được chuẩn bị"
+                                    );
+                                });
+                            },
+                            e -> Toast.makeText(
+                                    getContext(),
+                                    "Lỗi kiểm tra kho",
+                                    Toast.LENGTH_SHORT
+                            ).show()
+                    );
                 },
-                e -> {
-                    android.util.Log.e("AdminOrders", "Lỗi kiểm tra nguyên liệu: " + e.getMessage());
-                    // Nếu lỗi kiểm tra, vẫn cho phép chuẩn bị (để không block)
-                    Toast.makeText(getContext(), "Bắt đầu trừ kho...", Toast.LENGTH_SHORT).show();
-                    deductIngredientsForOrder(order, () -> {
-                        updateOrderStatus(order.getId(), "preparing", "Đơn hàng đang được chuẩn bị");
-                    });
-                });
+                e -> Toast.makeText(
+                        getContext(),
+                        "Lỗi kiểm tra công thức",
+                        Toast.LENGTH_SHORT
+                ).show()
+        );
     }
+
+
 
     @Override
     public void onServed(OrderModel order) {
@@ -348,12 +397,12 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
     public void onViewDetails(OrderModel order) {
         showOrderDetailsDialog(order);
     }
-    
+
     private void updateOrderStatus(String orderId, String status, String successMessage) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", status);
         updates.put("updatedAt", System.currentTimeMillis());
-        
+
         FirebaseService.getInstance().getDb()
                 .collection("orders")
                 .document(orderId)
@@ -365,14 +414,14 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                     Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
-    
 
-    
+
+
     private void showOrderDetailsDialog(OrderModel order) {
         StringBuilder details = new StringBuilder();
-        
+
         details.append("📋 Đơn #").append(order.getId().substring(0, 8).toUpperCase()).append("\n\n");
-        
+
         if ("dine_in".equals(order.getOrderType())) {
             details.append("🪑 ").append(order.getTableName() != null ? order.getTableName() : "Ăn tại chỗ").append("\n");
         } else if ("takeaway".equals(order.getOrderType())) {
@@ -384,9 +433,9 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                 details.append("📞 ").append(order.getDeliveryPhone()).append("\n");
             }
         }
-        
+
         details.append("\n--- Món đặt ---\n");
-        
+
         List<?> itemsList = order.getItemsForDisplay();
         if (itemsList != null && !itemsList.isEmpty()) {
             for (Object item : itemsList) {
@@ -397,7 +446,7 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
                     Object priceObj = itemMap.get("price");
                     int qty = qtyObj instanceof Number ? ((Number) qtyObj).intValue() : 1;
                     double price = priceObj instanceof Number ? ((Number) priceObj).doubleValue() : 0;
-                    
+
                     if (name != null) {
                         details.append("• ").append(name).append(" x").append(qty);
                         if (price > 0) {
@@ -410,7 +459,7 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
         } else {
             details.append("(Không có thông tin món)\n");
         }
-        
+
         details.append("\n");
         if (order.getSubtotal() != null) {
             details.append("Tạm tính: ").append(String.format(Locale.getDefault(), "%,.0fđ", order.getSubtotal())).append("\n");
@@ -421,12 +470,12 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
         if (order.getTotal() != null) {
             details.append("💰 Tổng cộng: ").append(String.format(Locale.getDefault(), "%,.0fđ", order.getTotal())).append("\n");
         }
-        
+
         if (order.getCreatedAt() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault());
             details.append("\n🕐 ").append(sdf.format(order.getCreatedAt().toDate()));
         }
-        
+
         new AlertDialog.Builder(requireContext())
                 .setTitle("Chi tiết đơn hàng")
                 .setMessage(details.toString())
@@ -437,66 +486,84 @@ public class AdminOrdersFragment extends Fragment implements StaffOrderAdapter.O
     /**
      * Trừ nguyên liệu từ kho khi bắt đầu chuẩn bị đơn hàng
      */
-    private void deductIngredientsForOrder(OrderModel order, Runnable onComplete) {
+    private void deductIngredientsForOrder(
+            OrderModel order,
+            java.util.function.Consumer<Boolean> callback
+    ) {
         List<?> items = order.getItemsForDisplay();
+
         if (items == null || items.isEmpty()) {
             android.util.Log.d("AdminOrders", "Đơn hàng không có items");
-            onComplete.run();
+            callback.accept(true);
             return;
         }
 
         android.util.Log.d("AdminOrders", "Bắt đầu trừ kho cho " + items.size() + " món");
 
-        final int[] pendingDeductions = {0};
-        final int[] completedDeductions = {0};
+        final int[] pending = {0};
+        final int[] completed = {0};
         final boolean[] hasError = {false};
+        final boolean[] callbackCalled = {false};
 
-        // Đếm số món cần trừ
+        // Đếm món hợp lệ
         for (Object itemObj : items) {
             String menuItemId = extractMenuItemId(itemObj);
-            if (menuItemId != null && !menuItemId.isEmpty()) {
-                pendingDeductions[0]++;
+            int quantity = extractQuantity(itemObj);
+
+            if (menuItemId != null && !menuItemId.isEmpty() && quantity > 0) {
+                pending[0]++;
             }
         }
 
-        android.util.Log.d("AdminOrders", "Số món cần trừ: " + pendingDeductions[0]);
-
-        if (pendingDeductions[0] == 0) {
-            android.util.Log.d("AdminOrders", "Không có món nào có menuItemId để trừ");
-            onComplete.run();
+        if (pending[0] == 0) {
+            android.util.Log.d("AdminOrders", "Không có món hợp lệ để trừ kho");
+            callback.accept(true);
             return;
         }
 
-        // Trừ nguyên liệu cho từng món
+        // ✅ Runnable thay cho hàm checkFinish
+        Runnable checkFinish = () -> {
+            if (completed[0] >= pending[0] && !callbackCalled[0]) {
+                callbackCalled[0] = true;
+                callback.accept(!hasError[0]);
+            }
+        };
+
         for (Object itemObj : items) {
             String menuItemId = extractMenuItemId(itemObj);
             int quantity = extractQuantity(itemObj);
             String itemName = extractItemName(itemObj);
 
-            if (menuItemId != null && !menuItemId.isEmpty()) {
-                android.util.Log.d("AdminOrders", "Đang trừ kho cho: " + itemName + " x" + quantity + " (menuItemId: " + menuItemId + ")");
-                FirebaseService.getInstance().deductIngredientsFromRecipe(
-                        menuItemId,
-                        quantity,
-                        unused -> {
-                            android.util.Log.d("AdminOrders", "Đã trừ kho cho: " + itemName);
-                            completedDeductions[0]++;
-                            if (completedDeductions[0] >= pendingDeductions[0]) {
-                                onComplete.run();
-                            }
-                        },
-                        e -> {
-                            hasError[0] = true;
-                            completedDeductions[0]++;
-                            android.util.Log.e("AdminOrders", "Lỗi trừ kho: " + e.getMessage());
-                            if (completedDeductions[0] >= pendingDeductions[0]) {
-                                onComplete.run();
-                            }
-                        }
-                );
+            if (menuItemId == null || menuItemId.isEmpty() || quantity <= 0) {
+                continue;
             }
+
+            android.util.Log.d(
+                    "AdminOrders",
+                    "Đang trừ kho: " + itemName + " x" + quantity
+            );
+
+            FirebaseService.getInstance().deductIngredientsFromRecipe(
+                    menuItemId,
+                    quantity,
+                    unused -> {
+                        completed[0]++;
+                        checkFinish.run();
+                    },
+                    e -> {
+                        completed[0]++;
+                        hasError[0] = true;
+                        android.util.Log.e(
+                                "AdminOrders",
+                                "❌ Lỗi trừ kho (" + itemName + "): " + e.getMessage()
+                        );
+                        checkFinish.run();
+                    }
+            );
         }
     }
+
+
 
     private String extractMenuItemId(Object itemObj) {
         if (itemObj instanceof OrderItem) {

@@ -10,6 +10,8 @@ import com.example.restaurantapp.models.TableModel;
 import com.example.restaurantapp.models.User;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
@@ -75,7 +77,7 @@ public class FirebaseService {
     }
 
     public void logout() { auth.signOut(); }
-    public boolean isLoggedIn() { return auth.getCurrentUser() != null; }
+
 
     /** =================== USERS =================== */
     public void getUser(String uid, OnSuccessListener<DocumentSnapshot> success, OnFailureListener fail) {
@@ -84,19 +86,13 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
-    public void listenUserRealtime(String uid, EventListener<DocumentSnapshot> listener) {
-        db.collection("users").document(uid).addSnapshotListener(listener);
-    }
+
 
     public ListenerRegistration listenUserRealtimeWithReg(String uid, EventListener<DocumentSnapshot> listener) {
         return db.collection("users").document(uid).addSnapshotListener(listener);
     }
 
-    public void updateUserRole(String uid, String role, OnSuccessListener<Void> success, OnFailureListener fail) {
-        db.collection("users").document(uid).update("role", role)
-                .addOnSuccessListener(success)
-                .addOnFailureListener(fail);
-    }
+
 
     public void listenUsersByRoleRealtime(String role, EventListener<QuerySnapshot> listener) {
         db.collection("users").whereEqualTo("role", role).addSnapshotListener(listener);
@@ -104,7 +100,7 @@ public class FirebaseService {
 
     /** =================== TABLES =================== */
 
-    private ListenerRegistration tableListener;
+
 
     /** Tạo bàn */
     public void createTable(String name, int capacity,
@@ -188,10 +184,6 @@ public class FirebaseService {
             tableListeners.remove(key);
         }
     }
-
-
-
-
 
     /** =================== MENU =================== */
     public void addMenuItem(String name, double price, String category, boolean available,
@@ -386,16 +378,6 @@ public class FirebaseService {
 
 
 
-
-
-    public void updateUserLoyaltyPoints(String userId, int delta) {
-        FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(userId)
-                .update("loyaltyPoints", FieldValue.increment(delta));
-    }
-
-
     public void updateOrderStatus(String orderId, String status,
                                   OnSuccessListener<Void> success, OnFailureListener fail) {
         db.collection("orders").document(orderId)
@@ -443,29 +425,6 @@ public class FirebaseService {
                 .addSnapshotListener(MetadataChanges.INCLUDE, listener);
     }
 
-    /** =================== REVIEWS =================== */
-    public void addReview(String customerId, String menuId, int rating, String comment,
-                          OnSuccessListener<DocumentReference> success, OnFailureListener fail) {
-        Map<String, Object> review = new HashMap<>();
-        review.put("customerId", customerId);
-        review.put("menuId", menuId);
-        review.put("rating", rating);
-        review.put("comment", comment);
-        review.put("createdAt", Timestamp.now());
-        db.collection("reviews").add(review)
-                .addOnSuccessListener(success)
-                .addOnFailureListener(fail);
-    }
-
-    public void listenReviewsByMenuRealtime(String menuId, EventListener<QuerySnapshot> listener) {
-        db.collection("reviews").whereEqualTo("menuId", menuId)
-                .addSnapshotListener(listener);
-    }
-
-    public void listenReviewsByCustomerRealtime(String customerId, EventListener<QuerySnapshot> listener) {
-        db.collection("reviews").whereEqualTo("customerId", customerId)
-                .addSnapshotListener(listener);
-    }
 
     /** =================== NOTIFICATIONS =================== */
     public void sendNotification(String userId, String title, String message,
@@ -502,28 +461,6 @@ public class FirebaseService {
     }
 
     /** Lấy danh sách notification đã đọc */
-    public void getReadNotificationIds(java.util.function.Consumer<java.util.Set<String>> onResult) {
-        String userId = getCurrentUserId();
-        if (userId == null) {
-            onResult.accept(new java.util.HashSet<>());
-            return;
-        }
-
-        db.collection("users").document(userId)
-                .collection("readNotifications")
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    java.util.Set<String> readIds = new java.util.HashSet<>();
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        readIds.add(doc.getId());
-                    }
-                    onResult.accept(readIds);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error getting read notifications", e);
-                    onResult.accept(new java.util.HashSet<>());
-                });
-    }
 
     /** Listen realtime danh sách notification đã đọc */
     public ListenerRegistration listenReadNotifications(java.util.function.Consumer<java.util.Set<String>> onUpdate) {
@@ -547,88 +484,8 @@ public class FirebaseService {
 
 
     /** =================== NOTIFICATIONS (REALTIME) =================== */
-    public ListenerRegistration listenNotificationsForUser(
-            String userId,
-            String role,
-            java.util.function.Consumer<List<NotificationModel>> onUpdate
-    ) {
 
-        List<NotificationModel> personalList = new ArrayList<>();
-        List<NotificationModel> broadcastList = new ArrayList<>();
 
-        // 📩 Personal notifications
-        ListenerRegistration personalListener =
-                db.collection("notifications")
-                        .whereEqualTo("type", "personal")
-                        .whereEqualTo("targetUserId", userId)
-                        .orderBy("createdAt", Query.Direction.DESCENDING)
-                        .addSnapshotListener((value, error) -> {
-                            if (error != null) {
-                                Log.e(TAG, "Lỗi personal notifications: " + error.getMessage());
-                                return;
-                            }
-                            if (value == null) return;
-                            
-                            Log.d(TAG, "Personal notifications: " + value.size());
-
-                            personalList.clear();
-                            for (DocumentSnapshot doc : value.getDocuments()) {
-                                NotificationModel n = doc.toObject(NotificationModel.class);
-                                if (n != null) {
-                                    n.setId(doc.getId());
-                                    personalList.add(n);
-                                }
-                            }
-
-                            onUpdate.accept(mergeAndSort(personalList, broadcastList));
-                        });
-
-        // 📢 Broadcast notifications
-        ListenerRegistration broadcastListener =
-                db.collection("notifications")
-                        .whereEqualTo("type", "broadcast")
-                        .whereArrayContains("roles", role)
-                        .orderBy("createdAt", Query.Direction.DESCENDING)
-                        .addSnapshotListener((value, error) -> {
-                            if (error != null) {
-                                Log.e(TAG, "Lỗi broadcast notifications: " + error.getMessage());
-                                return;
-                            }
-                            if (value == null) return;
-                            
-                            Log.d(TAG, "Broadcast notifications for role " + role + ": " + value.size());
-
-                            broadcastList.clear();
-                            for (DocumentSnapshot doc : value.getDocuments()) {
-                                NotificationModel n = doc.toObject(NotificationModel.class);
-                                if (n != null) {
-                                    n.setId(doc.getId());
-                                    broadcastList.add(n);
-                                }
-                            }
-
-                            onUpdate.accept(mergeAndSort(personalList, broadcastList));
-                        });
-
-        return () -> {
-            personalListener.remove();
-            broadcastListener.remove();
-        };
-    }
-
-    private List<NotificationModel> mergeAndSort(
-            List<NotificationModel> personal,
-            List<NotificationModel> broadcast
-    ) {
-        List<NotificationModel> merged = new ArrayList<>();
-        merged.addAll(personal);
-        merged.addAll(broadcast);
-
-        Collections.sort(merged, (a, b) ->
-                b.getCreatedAt().compareTo(a.getCreatedAt()));
-
-        return merged;
-    }
 
 
     // 2️⃣ Broadcast notification to roles
@@ -697,16 +554,6 @@ public class FirebaseService {
     }
 
     /** =================== PROMOTIONS / DISCOUNTS =================== */
-    public void addPromotion(String name, double discountPercent, Timestamp validUntil,
-                             OnSuccessListener<DocumentReference> success, OnFailureListener fail) {
-        Map<String,Object> promo = new HashMap<>();
-        promo.put("name", name);
-        promo.put("discountPercent", discountPercent);
-        promo.put("validUntil", validUntil);
-        db.collection("promotions").add(promo)
-                .addOnSuccessListener(success)
-                .addOnFailureListener(fail);
-    }
 
     public void updatePromotion(String promoId, Map<String,Object> updates, OnSuccessListener<Void> success, OnFailureListener fail) {
         db.collection("promotions").document(promoId)
@@ -719,49 +566,8 @@ public class FirebaseService {
         db.collection("promotions").addSnapshotListener(listener);
     }
 
-    /** =================== REPORTS =================== */
-    // Admin-only reports can just query the respective collections with filters
-    public void listenOrdersReportRealtime(EventListener<QuerySnapshot> listener) {
-        db.collection("orders").addSnapshotListener(listener);
-    }
-
-    public void listenRevenueReportRealtime(EventListener<QuerySnapshot> listener) {
-        db.collection("orders")
-                .whereIn("status", List.of("paid","served"))
-                .addSnapshotListener(listener);
-    }
-
-    public void listenInventoryReportRealtime(EventListener<QuerySnapshot> listener) {
-        db.collection("inventory").addSnapshotListener(listener);
-    }
-
-    public void listenMenuReportRealtime(EventListener<QuerySnapshot> listener) {
-        db.collection("menu").addSnapshotListener(listener);
-    }
 
     /** =================== ADVANCED FEATURES =================== */
-
-    // 1️⃣ Auto deduct stock after order
-    public void deductStockFromOrder(Map<String, Object> order,
-                                     OnSuccessListener<Void> success, OnFailureListener fail) {
-        List<Map<String, Object>> items = (List<Map<String, Object>>) order.get("items");
-
-        WriteBatch batch = db.batch();
-        for (Map<String,Object> menuItem : items) {
-            List<Map<String,Object>> ingredients = (List<Map<String,Object>>) menuItem.get("ingredients");
-            for (Map<String,Object> ing : ingredients) {
-                String ingId = (String) ing.get("id");
-                double usedQty = (double) ing.get("quantity");
-                DocumentReference stockRef = db.collection("inventory").document(ingId);
-                batch.update(stockRef, "quantity", FieldValue.increment(-usedQty));
-            }
-        }
-
-        batch.commit().addOnSuccessListener(success).addOnFailureListener(fail);
-    }
-
-
-
 
     // 3️⃣ Loyalty points
     public void addLoyaltyPoints(String customerId, int points,
@@ -780,8 +586,6 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
-    // Trong FirebaseService.java
-    // Trong FirebaseService.java
 
     // Trong FirebaseService.java
     public void updateLoyaltyPoints(String customerId, double orderTotal, OnSuccessListener<Void> successListener) {
@@ -808,21 +612,6 @@ public class FirebaseService {
                     android.util.Log.e("LOYALTY_DEBUG", "❌ Lỗi Firebase: " + e.getMessage());
                     // Nếu lỗi "No document to update", có thể do ID user sai
                 });
-    }
-
-    // 4️⃣ Apply voucher
-    public void applyVoucherToOrder(String orderId, String voucherCode,
-                                    OnSuccessListener<Void> success, OnFailureListener fail) {
-        db.collection("vouchers").whereEqualTo("code", voucherCode).get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (!querySnapshot.isEmpty()) {
-                        DocumentSnapshot voucher = querySnapshot.getDocuments().get(0);
-                        db.collection("orders").document(orderId)
-                                .update("voucher", voucher.getData())
-                                .addOnSuccessListener(success)
-                                .addOnFailureListener(fail);
-                    } else fail.onFailure(new Exception("Voucher not found"));
-                }).addOnFailureListener(fail);
     }
 
     // Validate voucher code
@@ -882,13 +671,6 @@ public class FirebaseService {
                 .addSnapshotListener(listener);
     }
 
-    public ListenerRegistration listenRevenueByPeriod(String status, Timestamp start, Timestamp end, EventListener<QuerySnapshot> listener) {
-        return db.collection("orders")
-                .whereEqualTo("status", status)
-                .whereGreaterThanOrEqualTo("createdAt", start)
-                .whereLessThanOrEqualTo("createdAt", end)
-                .addSnapshotListener(listener);
-    }
 
     /** =================== RESERVATIONS =================== */
     public void createReservation(Map<String, Object> reservation,
@@ -944,48 +726,6 @@ public class FirebaseService {
 
     /** =================== RECIPES =================== */
 
-    /**
-     * Thêm công thức mới
-     */
-    public void addRecipe(Map<String, Object> recipeData,
-                          OnSuccessListener<DocumentReference> success,
-                          OnFailureListener fail) {
-        recipeData.put("createdAt", Timestamp.now());
-        db.collection("recipes").add(recipeData)
-                .addOnSuccessListener(success)
-                .addOnFailureListener(fail);
-    }
-
-    /**
-     * Cập nhật công thức
-     */
-    public void updateRecipe(String recipeId, Map<String, Object> updates,
-                             OnSuccessListener<Void> success, OnFailureListener fail) {
-        updates.put("updatedAt", Timestamp.now());
-        db.collection("recipes").document(recipeId)
-                .update(updates)
-                .addOnSuccessListener(success)
-                .addOnFailureListener(fail);
-    }
-
-    /**
-     * Xóa công thức
-     */
-    public void deleteRecipe(String recipeId,
-                             OnSuccessListener<Void> success,
-                             OnFailureListener fail) {
-        db.collection("recipes").document(recipeId)
-                .delete()
-                .addOnSuccessListener(success)
-                .addOnFailureListener(fail);
-    }
-
-    /**
-     * Lắng nghe realtime danh sách công thức
-     */
-    public ListenerRegistration listenRecipesRealtime(EventListener<QuerySnapshot> listener) {
-        return db.collection("recipes").addSnapshotListener(listener);
-    }
 
     /**
      * Lấy công thức theo menu item ID
@@ -1000,22 +740,92 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
-    /**
-     * Cập nhật trạng thái món ăn dựa trên nguyên liệu
-     * Gọi method này khi cần đồng bộ hàng loạt
-     */
-    public void updateMenuItemAvailability(String menuItemId, boolean available,
-                                           OnSuccessListener<Void> success,
-                                           OnFailureListener fail) {
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("available", available);
-        updates.put("lastStockCheck", Timestamp.now());
+    public void checkRecipeExistence(
+            List<?> items,
+            OnSuccessListener<List<String>> onMissingRecipe,
+            OnFailureListener onFail
+    ) {
+        FirebaseFirestore db = getDb();
+        List<String> missing = new ArrayList<>();
 
-        db.collection("menu").document(menuItemId)
-                .update(updates)
-                .addOnSuccessListener(success)
-                .addOnFailureListener(fail);
+        final int[] pending = {0};
+        final int[] done = {0};
+        final boolean[] hasError = {false};
+        final boolean[] callbackCalled = {false};
+
+        // Đếm số món có menuItemId
+        for (Object item : items) {
+            String menuItemId = extractMenuItemId(item);
+            if (menuItemId != null && !menuItemId.isEmpty()) {
+                pending[0]++;
+            }
+        }
+
+        // Không có món nào cần check
+        if (pending[0] == 0) {
+            onMissingRecipe.onSuccess(missing);
+            return;
+        }
+
+        // Runnable để kết thúc an toàn
+        Runnable checkFinish = () -> {
+            if (done[0] >= pending[0] && !callbackCalled[0]) {
+                callbackCalled[0] = true;
+
+                if (hasError[0]) {
+                    onFail.onFailure(
+                            new Exception("Lỗi khi kiểm tra công thức món ăn")
+                    );
+                } else {
+                    onMissingRecipe.onSuccess(missing);
+                }
+            }
+        };
+
+        for (Object item : items) {
+            String menuItemId = extractMenuItemId(item);
+            String name = extractItemName(item);
+
+            if (menuItemId == null || menuItemId.isEmpty()) continue;
+
+            db.collection("recipes")
+                    .document(menuItemId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        if (!doc.exists()
+                                || doc.get("ingredients") == null
+                                || ((List<?>) doc.get("ingredients")).isEmpty()) {
+                            missing.add(name + " (chưa có công thức)");
+                        }
+                        done[0]++;
+                        checkFinish.run();
+                    })
+                    .addOnFailureListener(e -> {
+                        hasError[0] = true;
+                        done[0]++;
+                        checkFinish.run();
+                    });
+        }
     }
+
+    private String extractItemName(Object item) {
+        if (item instanceof Map) {
+            Object name = ((Map<?, ?>) item).get("menuItemName");
+            return name != null ? name.toString() : "Món không tên";
+        }
+        return "Món không tên";
+    }
+
+
+    private String extractMenuItemId(Object item) {
+        if (item instanceof Map) {
+            Object id = ((Map<?, ?>) item).get("menuItemId");
+            return id != null ? id.toString() : null;
+        }
+        return null;
+    }
+
+
 
     /**
      * Trừ nguyên liệu khi đơn hàng được xác nhận
@@ -1280,52 +1090,6 @@ public class FirebaseService {
             return name != null ? name.toString() : "Unknown";
         }
         return "Unknown";
-    }
-
-    /** Tìm kiếm nhân viên theo tên (username) */
-    public void searchStaffByName(String nameQuery,
-                                  OnSuccessListener<List<User>> success,
-                                  OnFailureListener fail) {
-        if (nameQuery == null || nameQuery.trim().isEmpty()) {
-            // Nếu query rỗng, trả về tất cả nhân viên
-            listenUsersByRoleRealtime("staff", (value, error) -> {
-                if (error != null || value == null) {
-                    fail.onFailure(error != null ? new Exception(error.getMessage()) : new Exception("Unknown error"));
-                    return;
-                }
-                List<User> result = new ArrayList<>();
-                for (DocumentSnapshot doc : value.getDocuments()) {
-                    User user = doc.toObject(User.class);
-                    if (user != null) {
-                        user.setId(doc.getId());
-                        result.add(user);
-                    }
-                }
-                success.onSuccess(result);
-            });
-            return;
-        }
-
-        // Dùng startAt / endAt để tìm kiếm tên gần đúng
-        String queryLower = nameQuery.toLowerCase();
-        db.collection("users")
-                .whereEqualTo("role", "staff")
-                .orderBy("usernameLower") // cần có field usernameLower trong Firestore (username.toLowerCase())
-                .startAt(queryLower)
-                .endAt(queryLower + "\uf8ff")
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    List<User> result = new ArrayList<>();
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        User user = doc.toObject(User.class);
-                        if (user != null) {
-                            user.setId(doc.getId());
-                            result.add(user);
-                        }
-                    }
-                    success.onSuccess(result);
-                })
-                .addOnFailureListener(fail);
     }
 
 }
