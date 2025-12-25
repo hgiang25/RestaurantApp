@@ -305,52 +305,51 @@ public class StaffOrdersFragment extends Fragment implements StaffOrderAdapter.O
 
     @Override
     public void onCancel(OrderModel order) {
-        // Tạo input để nhập lý do hủy
         android.widget.EditText inputReason = new android.widget.EditText(requireContext());
         inputReason.setHint("Nhập lý do hủy (không bắt buộc)");
         inputReason.setPadding(48, 32, 48, 16);
-        
+
         String status = order.getStatus();
         String warningMessage = "";
-        
+
         if ("preparing".equals(status)) {
             warningMessage = "⚠️ Đơn hàng đang được chuẩn bị!\nNguyên liệu đã trừ sẽ không được hoàn lại.\n\n";
         }
-        
+
         new AlertDialog.Builder(requireContext())
                 .setTitle("🚫 Hủy đơn hàng")
-                .setMessage(warningMessage + "Bạn có chắc muốn hủy đơn #" + 
-                        order.getId().substring(0, Math.min(8, order.getId().length())).toUpperCase() + "?")
+                .setMessage(
+                        warningMessage +
+                                "Bạn có chắc muốn hủy đơn #" +
+                                order.getId().substring(0, Math.min(8, order.getId().length())).toUpperCase() + "?"
+                )
                 .setView(inputReason)
                 .setPositiveButton("Hủy đơn", (dialog, which) -> {
                     String reason = inputReason.getText().toString().trim();
-                    cancelOrder(order.getId(), reason);
+                    cancelOrder(order, reason); // ✅ truyền cả order
                 })
                 .setNegativeButton("Không", null)
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
     }
-    
-    private void cancelOrder(String orderId, String reason) {
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "cancelled");
-        updates.put("updatedAt", System.currentTimeMillis());
-        updates.put("cancelledAt", System.currentTimeMillis());
-        if (reason != null && !reason.isEmpty()) {
-            updates.put("cancelReason", reason);
+
+
+    private void cancelOrder(OrderModel order, String reason) {
+
+        if (order.getCustomerId() == null) {
+            Toast.makeText(getContext(), "Không tìm thấy khách hàng", Toast.LENGTH_SHORT).show();
+            return;
         }
-        
-        FirebaseService.getInstance().getDb()
-                .collection("orders")
-                .document(orderId)
-                .update(updates)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(getContext(), "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+
+        FirebaseService.getInstance().cancelOrderWithRefund(
+                order.getId(),
+                order.getCustomerId(), // ✅ ĐÚNG customer
+                reason,
+                unused -> Toast.makeText(getContext(), "Đã hủy đơn & hoàn điểm", Toast.LENGTH_SHORT).show(),
+                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
     }
+
 
     @Override
     public void onViewDetails(OrderModel order) {

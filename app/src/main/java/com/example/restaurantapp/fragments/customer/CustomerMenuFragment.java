@@ -52,6 +52,8 @@ public class CustomerMenuFragment extends Fragment {
     // Khai báo biến lưu điểm
     private int availablePoints = 0;
     private int pointsToUse = 0;
+    private double pointDiscount = 0;
+
     private final int POINT_VALUE = 100; // 1 điểm = 100đ
 
 
@@ -307,8 +309,9 @@ public class CustomerMenuFragment extends Fragment {
                 layoutDiscount.setVisibility(View.GONE);
                 layoutVoucherApplied.setVisibility(View.GONE);
             }
-            
-            double total = subtotal[0] - discount[0];
+
+            double total = subtotal[0] - discount[0] - pointDiscount;
+            if (total < 0) total = 0;
             tvTotalPrice.setText(String.format("%,.0fđ", total));
         };
 
@@ -319,14 +322,19 @@ public class CustomerMenuFragment extends Fragment {
             @Override
             public void afterTextChanged(Editable s) {
                 int inputPoints = 0;
-                try { inputPoints = Integer.parseInt(s.toString()); } catch (NumberFormatException e) {}
-                pointsToUse = Math.min(inputPoints, availablePoints); // không vượt quá điểm hiện có
+                try {
+                    inputPoints = Integer.parseInt(s.toString());
+                } catch (NumberFormatException ignored) {}
 
-                // Cập nhật tổng tiền
-                double discountPoints = pointsToUse * POINT_VALUE;
-                double total = subtotal[0] - discount[0] - discountPoints; // subtotal[0] và discount[0] từ cart
+                pointsToUse = Math.min(inputPoints, availablePoints);
+                pointDiscount = pointsToUse * POINT_VALUE;
+
+                double total = subtotal[0] - discount[0] - pointDiscount;
+                if (total < 0) total = 0;
+
                 tvTotalPrice.setText(String.format("%,.0fđ", total));
             }
+
         });
 
 
@@ -526,23 +534,39 @@ public class CustomerMenuFragment extends Fragment {
             voucherData.put("discountAmount", discount[0]);
         }
 
-        final double finalTotal = subtotal[0] - discount[0];
+        final double finalTotal = subtotal[0] - discount[0] - (pointsToUse * POINT_VALUE);
         final double finalSubtotal = subtotal[0];
         final double finalDiscount = discount[0];
 
         // Gọi createOrder với đầy params (bỏ update)
         Map<String, Object> voucherDataFinal = voucherData;
-        FirebaseService.getInstance().createOrder(customerId, orderType, tableId, tableName, address, phone,
-                items, finalSubtotal, finalDiscount, finalTotal, voucherDataFinal,
+        FirebaseService.getInstance().createOrder(
+                customerId,
+                orderType,
+                tableId,
+                tableName,
+                address,
+                phone,
+                items,
+                finalSubtotal,
+                finalDiscount,
+                finalTotal,
+                voucherDataFinal,
+                pointsToUse,
+                pointsToUse * POINT_VALUE,
                 docRef -> {
-                    String successMsg = "dine_in".equals(orderType)
-                            ? "Đặt món thành công! Bàn: " + tableName
-                            : "Đặt món mang về thành công!";
-                    Toast.makeText(getContext(), successMsg, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(),
+                            "Đặt món thành công!", Toast.LENGTH_SHORT).show();
+
                     cart.clear();
                     appliedVoucher = null;
+                    pointsToUse = 0;
                 },
-                e -> Toast.makeText(getContext(), "Lỗi đặt món: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                e -> Toast.makeText(getContext(),
+                        e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
+
+
     }
     
     @Override

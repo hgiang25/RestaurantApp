@@ -17,7 +17,7 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#1A2B4C"
-            android:padding="16dp"
+            android:padding="24dp"
             android:background="@color/white"/>
 
         <!-- Ô tìm kiếm nguyên liệu -->

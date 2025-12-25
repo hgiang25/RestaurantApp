@@ -16,6 +16,7 @@ import com.google.firebase.firestore.*;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -245,46 +246,155 @@ public class FirebaseService {
     }
 
     /** =================== ORDERS =================== */
-    public void createOrder(String customerId, String orderType, String tableId, String tableName,
-                            String deliveryAddress, String deliveryPhone, List<Map<String,Object>> items,
-                            double subtotal, double discount, double total, Map<String, Object> voucher,
-                            OnSuccessListener<DocumentReference> success, OnFailureListener fail) {
-        Map<String, Object> order = new HashMap<>();
-        order.put("customerId", customerId);
-        order.put("orderType", orderType);// Đã có từ fix trước
-        order.put("items", items);
-        order.put("status", "pending"); // pending, confirmed, preparing, served, paid
-        order.put("createdAt", Timestamp.now());
+    public void createOrder(String customerId,
+                            String orderType,
+                            String tableId,
+                            String tableName,
+                            String deliveryAddress,
+                            String deliveryPhone,
+                            List<Map<String, Object>> items,
+                            double subtotal,
+                            double discount,
+                            double total,
+                            Map<String, Object> voucher,
+                            int pointsUsed,
+                            double pointsDiscount,
+                            OnSuccessListener<DocumentReference> success,
+                            OnFailureListener fail) {
 
-        // Thêm các field mới
-        order.put("subtotal", subtotal);
-        order.put("discount", discount);
-        order.put("total", total);
-        if (voucher != null) {
-            order.put("voucher", voucher);
-        }
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference userRef = db.collection("users").document(customerId);
+        DocumentReference orderRef = db.collection("orders").document();
 
-        // Field điều kiện theo type
-        if ("dine_in".equals(orderType)) {
-            if (tableId != null) {
-                order.put("tableId", tableId);
-            }
-            if (tableName != null) {
-                order.put("tableName", tableName);
-            }
-        } else if ("takeaway".equals(orderType)) {
-            if (deliveryAddress != null) {
-                order.put("deliveryAddress", deliveryAddress);
-            }
-            if (deliveryPhone != null) {
-                order.put("deliveryPhone", deliveryPhone);
-            }
-        }
+        db.runTransaction(transaction -> {
 
-        db.collection("orders").add(order)
+                    // ===== LẤY USER =====
+                    DocumentSnapshot userSnap = transaction.get(userRef);
+                    Long currentPoints = userSnap.getLong("loyaltyPoints");
+                    if (currentPoints == null) currentPoints = 0L;
+
+                    // ❌ Không đủ điểm
+                    if (pointsUsed > currentPoints) {
+                        throw new RuntimeException("Không đủ điểm tích lũy");
+                    }
+
+                    // ===== TRỪ ĐIỂM =====
+                    transaction.update(userRef,
+                            "loyaltyPoints", currentPoints - pointsUsed);
+
+                    // ===== TẠO ORDER =====
+                    Map<String, Object> order = new HashMap<>();
+                    order.put("customerId", customerId);
+                    order.put("orderType", orderType);
+                    order.put("items", items);
+                    order.put("status", "pending");
+                    order.put("createdAt", Timestamp.now());
+
+                    order.put("subtotal", subtotal);
+                    order.put("discount", discount);
+                    order.put("pointsUsed", pointsUsed);
+                    order.put("pointsDiscount", pointsDiscount);
+                    order.put("pointsRefunded", false); // ✅ thêm
+                    order.put("total", total);
+
+                    if (voucher != null) {
+                        order.put("voucher", voucher);
+                    }
+
+                    if ("dine_in".equals(orderType)) {
+                        if (tableId != null) order.put("tableId", tableId);
+                        if (tableName != null) order.put("tableName", tableName);
+                    } else if ("takeaway".equals(orderType)) {
+                        if (deliveryAddress != null) order.put("deliveryAddress", deliveryAddress);
+                        if (deliveryPhone != null) order.put("deliveryPhone", deliveryPhone);
+                    }
+
+                    transaction.set(orderRef, order);
+
+                    return orderRef;
+                })
                 .addOnSuccessListener(success)
                 .addOnFailureListener(fail);
     }
+
+    public void cancelOrderWithRefund(
+            String orderId,
+            String customerId,
+            String reason,
+            OnSuccessListener<Void> success,
+            OnFailureListener failure
+    ) {
+        FirebaseFirestore db = getDb();
+
+        DocumentReference orderRef = db.collection("orders").document(orderId);
+        DocumentReference userRef = db.collection("users").document(customerId);
+
+        db.runTransaction(transaction -> {
+
+                    DocumentSnapshot orderSnap = transaction.get(orderRef);
+                    if (!orderSnap.exists()) {
+                        throw new RuntimeException("Order not found");
+                    }
+
+                    String status = orderSnap.getString("status");
+                    Long usedPoints = orderSnap.getLong("pointsUsed"); // ✅ đúng field
+                    Boolean refunded = orderSnap.getBoolean("pointsRefunded");
+
+                    // ❌ Không cho hủy nếu đã thanh toán
+                    if ("paid".equals(status)) {
+                        throw new RuntimeException("Đơn hàng đã thanh toán");
+                    }
+
+                    // ❌ Không hoàn điểm nếu đang chuẩn bị
+                    if ("preparing".equals(status)) {
+                        throw new RuntimeException("Đơn hàng đang được chuẩn bị, không hoàn điểm");
+                    }
+
+                    Map<String, Object> orderUpdate = new HashMap<>();
+                    orderUpdate.put("status", "cancelled");
+                    orderUpdate.put("cancelledAt", System.currentTimeMillis());
+                    orderUpdate.put("updatedAt", System.currentTimeMillis());
+
+                    if (reason != null && !reason.isEmpty()) {
+                        orderUpdate.put("cancelReason", reason);
+                    }
+
+                    // ✅ HOÀN ĐIỂM
+                    if (usedPoints != null && usedPoints > 0 && !Boolean.TRUE.equals(refunded)) {
+
+                        DocumentSnapshot userSnap = transaction.get(userRef);
+                        Long currentPoints = userSnap.getLong("loyaltyPoints");
+                        if (currentPoints == null) currentPoints = 0L;
+
+                        transaction.update(
+                                userRef,
+                                "loyaltyPoints",
+                                currentPoints + usedPoints
+                        );
+
+                        orderUpdate.put("pointsRefunded", true);
+                    }
+
+                    transaction.update(orderRef, orderUpdate);
+                    return null;
+                })
+                .addOnSuccessListener(unused -> {
+                    if (success != null) success.onSuccess(null);
+                })
+                .addOnFailureListener(failure);
+    }
+
+
+
+
+
+    public void updateUserLoyaltyPoints(String userId, int delta) {
+        FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .update("loyaltyPoints", FieldValue.increment(delta));
+    }
+
 
     public void updateOrderStatus(String orderId, String status,
                                   OnSuccessListener<Void> success, OnFailureListener fail) {
