@@ -34,6 +34,9 @@ public class AdminInventoryFragment extends Fragment {
     private List<InventoryModel> inventoryList = new ArrayList<>();
     private FloatingActionButton fabAdd;
     private ListenerRegistration inventoryListener;
+    private EditText edtSearch;
+    private List<InventoryModel> filteredList = new ArrayList<>();
+
 
     @Nullable
     @Override
@@ -49,17 +52,35 @@ public class AdminInventoryFragment extends Fragment {
 
         fabAdd.setOnClickListener(v -> showAddInventoryDialog());
 
-        loadInventory();
+        loadInventory(""); // Bắt đầu với danh sách đầy đủ
+
+        edtSearch = view.findViewById(R.id.edtSearchInventory);
+
+// Gắn TextWatcher để tìm kiếm theo tên nguyên liệu
+        edtSearch.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Gọi lại loadInventory với keyword từ EditText
+                loadInventory(s.toString().trim());
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+
 
         return view;
     }
 
-    private void loadInventory() {
+    private void loadInventory(@Nullable String keyword) {
         // Hủy listener cũ nếu có
         if (inventoryListener != null) {
             inventoryListener.remove();
         }
-        
+
         inventoryListener = FirebaseService.getInstance().listenInventoryRealtime((value, error) -> {
             if (!isAdded() || getContext() == null) return;
             if (error != null) {
@@ -67,24 +88,24 @@ public class AdminInventoryFragment extends Fragment {
                 return;
             }
             if (value == null) return;
-            
-            // Log để debug
-            boolean fromCache = value.getMetadata().isFromCache();
-            android.util.Log.d("AdminInventory", "Nhận " + value.size() + " items (fromCache: " + fromCache + ")");
 
             inventoryList.clear();
             for (DocumentSnapshot doc : value.getDocuments()) {
                 InventoryModel item = doc.toObject(InventoryModel.class);
                 if (item != null) {
                     item.setId(doc.getId());
-                    inventoryList.add(item);
-                    android.util.Log.d("AdminInventory", "Item: " + item.getName() + " - Qty: " + item.getQuantity());
+                    // Lọc trực tiếp theo keyword nếu có
+                    if (keyword == null || keyword.isEmpty() || item.getName().toLowerCase().contains(keyword.toLowerCase())) {
+                        inventoryList.add(item);
+                    }
                 }
             }
+
             if (adapter != null) adapter.notifyDataSetChanged();
         });
     }
-    
+
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();

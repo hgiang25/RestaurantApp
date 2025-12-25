@@ -49,6 +49,11 @@ public class CustomerMenuFragment extends Fragment {
     private List<MenuItem> filteredList = new ArrayList<>();
     private String selectedCategory = "Tất cả";
     private String currentSearchQuery = "";
+    // Khai báo biến lưu điểm
+    private int availablePoints = 0;
+    private int pointsToUse = 0;
+    private final int POINT_VALUE = 100; // 1 điểm = 100đ
+
 
     // Giỏ hàng
     private Map<String, Integer> cart = new HashMap<>();
@@ -206,6 +211,8 @@ public class CustomerMenuFragment extends Fragment {
         RecyclerView recyclerCartItems = dialogView.findViewById(R.id.recyclerCartItems);
         MaterialButton btnClearCart = dialogView.findViewById(R.id.btnClearCart);
         MaterialButton btnPlaceOrder = dialogView.findViewById(R.id.btnPlaceOrder);
+        TextView tvAvailablePoints = dialogView.findViewById(R.id.tvAvailablePoints);
+        EditText edtPointsToUse = dialogView.findViewById(R.id.edtPointsToUse);
         
         // Order type views
         RadioGroup radioGroupOrderType = dialogView.findViewById(R.id.radioGroupOrderType);
@@ -228,6 +235,19 @@ public class CustomerMenuFragment extends Fragment {
                 layoutAddressInput.setVisibility(View.VISIBLE);
             }
         });
+
+        // Lấy điểm tích lũy realtime
+        String userId = FirebaseService.getInstance().getCurrentUserId();
+        if (userId != null) {
+            FirebaseService.getInstance().listenUserRealtimeWithReg(userId, (snapshot, error) -> {
+                if (snapshot != null && snapshot.contains("loyaltyPoints")) {
+                    availablePoints = snapshot.getLong("loyaltyPoints").intValue();
+                    tvAvailablePoints.setText("(" + availablePoints + " điểm)");
+                }
+            });
+        }
+
+
 
         // Build cart items list
         List<CartAdapter.CartItem> cartItems = new ArrayList<>();
@@ -291,6 +311,24 @@ public class CustomerMenuFragment extends Fragment {
             double total = subtotal[0] - discount[0];
             tvTotalPrice.setText(String.format("%,.0fđ", total));
         };
+
+        // Thêm TextWatcher
+        edtPointsToUse.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                int inputPoints = 0;
+                try { inputPoints = Integer.parseInt(s.toString()); } catch (NumberFormatException e) {}
+                pointsToUse = Math.min(inputPoints, availablePoints); // không vượt quá điểm hiện có
+
+                // Cập nhật tổng tiền
+                double discountPoints = pointsToUse * POINT_VALUE;
+                double total = subtotal[0] - discount[0] - discountPoints; // subtotal[0] và discount[0] từ cart
+                tvTotalPrice.setText(String.format("%,.0fđ", total));
+            }
+        });
+
 
         // Set initial data
         updateTotals.run();

@@ -1,5 +1,6 @@
 package com.example.restaurantapp.api;
 
+import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -12,6 +13,8 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,6 +29,7 @@ public class FirebaseService {
     private static FirebaseService instance;
     private final FirebaseAuth auth;
     private final FirebaseFirestore db;
+    private FirebaseStorage storage;
 
     public static FirebaseService getInstance() {
         if (instance == null) instance = new FirebaseService();
@@ -35,6 +39,7 @@ public class FirebaseService {
     private FirebaseService() {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
     }
 
     public FirebaseFirestore getDb() {
@@ -118,6 +123,20 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
+    /** =================== TABLE IMAGES =================== */
+    public void uploadTableImage(Uri imageUri, String filename,
+                                 OnSuccessListener<String> success,
+                                 OnFailureListener fail) {
+        StorageReference ref = storage.getReference().child("table_images/" + filename);
+
+        ref.putFile(imageUri)
+                .addOnSuccessListener(taskSnapshot -> ref.getDownloadUrl()
+                        .addOnSuccessListener(uri -> success.onSuccess(uri.toString()))
+                        .addOnFailureListener(fail))
+                .addOnFailureListener(fail);
+    }
+
+
     /** Update bàn */
     public void updateTable(String tableId, Map<String, Object> updates,
                             OnSuccessListener<Void> success,
@@ -169,20 +188,14 @@ public class FirebaseService {
         }
     }
 
-    /** Remove tất cả listener */
-    public void removeAllTableListeners() {
-        for (ListenerRegistration reg : tableListeners.values()) {
-            if (reg != null) reg.remove();
-        }
-        tableListeners.clear();
-    }
+
 
 
 
     /** =================== MENU =================== */
     public void addMenuItem(String name, double price, String category, boolean available,
                             String imageUrl, Map<String, Object> options,
-                            OnSuccessListener<DocumentReference> success,
+                            OnSuccessListener refSuccess,
                             OnFailureListener fail) {
         Map<String, Object> item = new HashMap<>();
         item.put("name", name);
@@ -191,8 +204,9 @@ public class FirebaseService {
         item.put("available", available);
         item.put("imageUrl", imageUrl);
         item.put("options", options); // size, toppings, combo...
+
         db.collection("menu").add(item)
-                .addOnSuccessListener(success)
+                .addOnSuccessListener(refSuccess)
                 .addOnFailureListener(fail);
     }
 
@@ -204,8 +218,30 @@ public class FirebaseService {
                 .addOnFailureListener(fail);
     }
 
+    public void deleteMenuItem(String menuId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        db.collection("menu").document(menuId)
+                .delete()
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+
     public ListenerRegistration listenMenuRealtime(EventListener<QuerySnapshot> listener) {
         return db.collection("menu").addSnapshotListener(listener);
+    }
+
+    /** =================== Upload image =================== */
+    public void uploadMenuImage(Uri imageUri, String filename,
+                                OnSuccessListener<String> success, OnFailureListener fail) {
+        StorageReference ref = storage.getReference().child("menu_images/" + filename);
+
+        ref.putFile(imageUri)
+                .addOnSuccessListener(taskSnapshot ->
+                        ref.getDownloadUrl().addOnSuccessListener(uri -> {
+                            // Trả về URL public của ảnh
+                            success.onSuccess(uri.toString());
+                        }).addOnFailureListener(fail))
+                .addOnFailureListener(fail);
     }
 
     /** =================== ORDERS =================== */

@@ -12,6 +12,7 @@ public class TableModel {
     private String name;
     private int capacity;
     private String status;
+    private String imageUrl; // Thêm trường này
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
@@ -27,12 +28,20 @@ public class TableModel {
     public void setId(String id) { this.id = id; }
 
     public String getName() { return name; }
-    public int getCapacity() { return capacity; }
-    public String getStatus() { return status; }
-    public Timestamp getCreatedAt() { return createdAt; }
-    public Timestamp getUpdatedAt() { return updatedAt; }
-
     public void setName(String name) { this.name = name; }
+
+    public int getCapacity() { return capacity; }
     public void setCapacity(int capacity) { this.capacity = capacity; }
+
+    public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public Timestamp getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    public Timestamp getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
 }

@@ -51,7 +51,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerCartItems"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="173dp"
         android:maxHeight="250dp"
         android:nestedScrollingEnabled="true" />
 
@@ -101,6 +101,34 @@
             app:backgroundTint="@color/accent"
             app:cornerRadius="8dp" />
     </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutUsePoints"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp">
+
+        <TextView
+            android:text="Dùng điểm: "
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <EditText
+            android:id="@+id/edtPointsToUse"
+            android:inputType="number"
+            android:hint="0"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/tvAvailablePoints"
+            android:text="(0 điểm)"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
 
     <!-- Applied Voucher Info -->
     <LinearLayout

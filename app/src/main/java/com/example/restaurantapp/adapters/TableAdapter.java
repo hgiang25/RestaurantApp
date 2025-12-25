@@ -3,12 +3,14 @@ package com.example.restaurantapp.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.restaurantapp.R;
 import com.example.restaurantapp.models.TableModel;
 
@@ -20,8 +22,8 @@ public class TableAdapter extends RecyclerView.Adapter<TableAdapter.TableViewHol
         void onTableClick(TableModel table);
     }
 
-    private List<TableModel> tableList;
-    private OnTableClickListener listener;
+    private final List<TableModel> tableList;
+    private final OnTableClickListener listener;
 
     public TableAdapter(List<TableModel> tableList, OnTableClickListener listener) {
         this.tableList = tableList;
@@ -50,6 +52,7 @@ public class TableAdapter extends RecyclerView.Adapter<TableAdapter.TableViewHol
     class TableViewHolder extends RecyclerView.ViewHolder {
         CardView cardView;
         TextView txtTableName, txtCapacity, txtStatus;
+        ImageView imgTable;
 
         TableViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -57,6 +60,7 @@ public class TableAdapter extends RecyclerView.Adapter<TableAdapter.TableViewHol
             txtTableName = itemView.findViewById(R.id.txtTableName);
             txtCapacity = itemView.findViewById(R.id.txtCapacity);
             txtStatus = itemView.findViewById(R.id.txtStatus);
+            imgTable = itemView.findViewById(R.id.imgTable);
         }
 
         void bind(TableModel table) {
@@ -73,10 +77,19 @@ public class TableAdapter extends RecyclerView.Adapter<TableAdapter.TableViewHol
                 cardView.setCardBackgroundColor(0xFFFFEBEE);
             }
 
+            // Hiển thị ảnh bàn
+            if (table.getImageUrl() != null && !table.getImageUrl().isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(table.getImageUrl())
+                        .placeholder(R.drawable.ic_table)
+                        .error(R.drawable.ic_table)
+                        .into(imgTable);
+            } else {
+                imgTable.setImageResource(R.drawable.ic_table);
+            }
+
             itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onTableClick(table);
-                }
+                if (listener != null) listener.onTableClick(table);
             });
         }
     }

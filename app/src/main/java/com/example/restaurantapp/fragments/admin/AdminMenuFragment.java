@@ -1,6 +1,7 @@
 package com.example.restaurantapp.fragments.admin;
 
 import android.app.AlertDialog;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -38,6 +39,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.bumptech.glide.Glide;
 
 public class AdminMenuFragment extends Fragment {
 
@@ -235,8 +238,7 @@ public class AdminMenuFragment extends Fragment {
 
         EditText edtName = view.findViewById(R.id.edtItemName);
         EditText edtPrice = view.findViewById(R.id.edtPrice);
-        EditText edtImageUrl = view.findViewById(R.id.edtImageUrl);
-        EditText edtDescription = view.findViewById(R.id.edtDescription);
+        EditText edtImageUrl = view.findViewById(R.id.edtImageUrl); // có thể dùng Uri picker
         AutoCompleteTextView spinnerCategory = view.findViewById(R.id.spinnerCategory);
         SwitchMaterial switchAvailable = view.findViewById(R.id.switchAvailable);
 
@@ -257,7 +259,6 @@ public class AdminMenuFragment extends Fragment {
             String name = edtName.getText().toString().trim();
             String priceStr = edtPrice.getText().toString().trim();
             String category = spinnerCategory.getText().toString().trim();
-            String imageUrl = edtImageUrl.getText().toString().trim();
             boolean available = switchAvailable.isChecked();
 
             if (name.isEmpty() || priceStr.isEmpty() || category.isEmpty()) {
@@ -267,44 +268,84 @@ public class AdminMenuFragment extends Fragment {
 
             double price = Double.parseDouble(priceStr);
 
-            FirebaseService.getInstance().addMenuItem(
-                    name,
-                    price,
-                    category,
-                    available,
-                    imageUrl.isEmpty() ? null : imageUrl,
-                    null,
-                    ref -> {
-                        Toast.makeText(getContext(), "Thêm món thành công", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    },
-                    e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-            );
+            // Nếu admin đã chọn ảnh Uri
+            Uri imageUri = /* lấy từ picker, ví dụ imageUri được set sẵn khi chọn ảnh */ null;
+
+            if (imageUri != null) {
+                String filename = "menu_" + System.currentTimeMillis() + ".png";
+
+                FirebaseService.getInstance().uploadMenuImage(imageUri, filename,
+                        imageUrl -> {
+                            // Sau khi upload xong, lưu menu vào Firestore
+                            FirebaseService.getInstance().addMenuItem(
+                                    name, price, category, available, imageUrl, null,
+                                    ref -> {
+                                        Toast.makeText(getContext(), "Thêm món thành công", Toast.LENGTH_SHORT).show();
+                                        dialog.dismiss();
+                                    },
+                                    e -> Toast.makeText(getContext(), "Lỗi lưu menu: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                            );
+                        },
+                        e -> Toast.makeText(getContext(), "Lỗi upload ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+            } else {
+                // Nếu không chọn ảnh, vẫn lưu menu nhưng imageUrl = null
+                FirebaseService.getInstance().addMenuItem(
+                        name, price, category, available, null, null,
+                        ref -> {
+                            Toast.makeText(getContext(), "Thêm món thành công", Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
+                        },
+                        e -> Toast.makeText(getContext(), "Lỗi lưu menu: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+            }
         });
 
         dialog.show();
     }
 
 
+
     private void showEditMenuDialog(MenuItem item) {
-        String[] options = {"Sửa thông tin", item.isAvailable() ? "Tạm hết món" : "Có sẵn", "Hủy"};
+        String[] options = {"Sửa thông tin", item.isAvailable() ? "Tạm hết món" : "Có sẵn", "Xóa món", "Hủy"};
 
         new AlertDialog.Builder(getContext())
                 .setTitle(item.getName())
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        showEditInfoDialog(item);
-                    } else if (which == 1) {
-                        // Toggle available
-                        Map<String, Object> updates = new HashMap<>();
-                        updates.put("available", !item.isAvailable());
-                        FirebaseService.getInstance().updateMenuItem(item.getId(), updates,
-                                unused -> {},
-                                e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    switch (which) {
+                        case 0:
+                            showEditInfoDialog(item);
+                            break;
+                        case 1:
+                            // Toggle available
+                            Map<String, Object> updates = new HashMap<>();
+                            updates.put("available", !item.isAvailable());
+                            FirebaseService.getInstance().updateMenuItem(item.getId(), updates,
+                                    unused -> {},
+                                    e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                            break;
+                        case 2:
+                            // Xác nhận xóa
+                            new AlertDialog.Builder(getContext())
+                                    .setTitle("Xóa món")
+                                    .setMessage("Bạn có chắc muốn xóa món \"" + item.getName() + "\"?")
+                                    .setPositiveButton("Xóa", (d, w) -> {
+                                        FirebaseService.getInstance().deleteMenuItem(item.getId(),
+                                                unused -> Toast.makeText(getContext(), "Đã xóa món", Toast.LENGTH_SHORT).show(),
+                                                e -> Toast.makeText(getContext(), "Lỗi xóa món: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                                        );
+                                    })
+                                    .setNegativeButton("Hủy", null)
+                                    .show();
+                            break;
+                        case 3:
+                            dialog.dismiss();
+                            break;
                     }
                 })
                 .show();
     }
+
 
     private void showEditInfoDialog(MenuItem item) {
         if (!isAdded() || getContext() == null) return;
@@ -314,6 +355,7 @@ public class AdminMenuFragment extends Fragment {
 
         EditText edtName = view.findViewById(R.id.edtItemName);
         EditText edtPrice = view.findViewById(R.id.edtPrice);
+        EditText edtImageUrl = view.findViewById(R.id.edtImageUrl);
         AutoCompleteTextView spinnerCategory = view.findViewById(R.id.spinnerCategory);
         SwitchMaterial switchAvailable = view.findViewById(R.id.switchAvailable);
 
@@ -335,20 +377,34 @@ public class AdminMenuFragment extends Fragment {
         view.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
 
         view.findViewById(R.id.btnSave).setOnClickListener(v -> {
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("name", edtName.getText().toString().trim());
-            updates.put("price", Double.parseDouble(edtPrice.getText().toString().trim()));
-            updates.put("category", spinnerCategory.getText().toString().trim());
-            updates.put("available", switchAvailable.isChecked());
+            String name = edtName.getText().toString().trim();
+            String priceStr = edtPrice.getText().toString().trim();
+            String category = spinnerCategory.getText().toString().trim();
+            boolean available = switchAvailable.isChecked();
+            String imageUrlInput = edtImageUrl.getText().toString().trim();
 
-            FirebaseService.getInstance().updateMenuItem(
-                    item.getId(),
-                    updates,
+            if (name.isEmpty() || priceStr.isEmpty() || category.isEmpty()) {
+                Toast.makeText(getContext(), "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            double price = Double.parseDouble(priceStr);
+
+            // Tạo map để update
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("name", name);
+            updates.put("price", price);
+            updates.put("category", category);
+            updates.put("available", available);
+            updates.put("imageUrl", imageUrlInput.isEmpty() ? null : imageUrlInput);
+
+            // Cập nhật document hiện có
+            FirebaseService.getInstance().updateMenuItem(item.getId(), updates,
                     unused -> {
-                        Toast.makeText(getContext(), "Cập nhật thành công", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Cập nhật món thành công", Toast.LENGTH_SHORT).show();
                         dialog.dismiss();
                     },
-                    e -> Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                    e -> Toast.makeText(getContext(), "Lỗi cập nhật món: " + e.getMessage(), Toast.LENGTH_SHORT).show()
             );
         });
 

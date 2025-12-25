@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.restaurantapp.R;
 import com.example.restaurantapp.models.MenuItem;
 
@@ -73,11 +74,24 @@ public class AdminMenuAdapter extends RecyclerView.Adapter<AdminMenuAdapter.Admi
                 txtStatus.setTextColor(0xFFF44336);
             }
 
+            // Load ảnh với Glide
+            String imageUrl = item.getImageUrl();
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(imageUrl)
+                        .placeholder(R.drawable.ic_restaurant)
+                        .error(R.drawable.ic_close)
+                        .into(imgFood);
+            } else {
+                imgFood.setImageResource(R.drawable.ic_menu_food);
+            }
+
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onMenuItemClick(item);
                 }
             });
         }
+
     }
 }
