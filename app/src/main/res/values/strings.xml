@@ -96,4 +96,31 @@
     <string name="edit_profile">Chỉnh sửa hồ sơ</string>
     <string name="change_password">Đổi mật khẩu</string>
 
+    <string name="nav_reservation">Đặt bàn</string>
+    <string name="order_completed">Đã hoàn tất</string>
+    <string name="order_ready">Sẵn sàng</string>
+    <string name="dark_mode">Chế độ tối</string>
+    <string name="dark_mode_desc">Chế độ tối giúp giảm mỏi mắt</string>
+    <string name="language">Ngôn ngữ</string>
+    <string name="vietnamese">Tiếng Việt</string>
+    <string name="english">Tiếng Anh</string>
+    <string name="dine_in">Tại quán</string>
+    <string name="takeaway">Mang đi</string>
+    <string name="select_table">Chọn bàn</string>
+    <string name="delivery_address">Địa chỉ giao hàng</string>
+    <string name="phone_number">Số điện thoại</string>
+    <string name="cart">Giỏ hàng</string>
+    <string name="subtotal">Tạm tính</string>
+    <string name="discount">Giảm giá</string>
+    <string name="voucher">Voucher</string>
+    <string name="apply">Áp dụng</string>
+    <string name="clear_cart">Xóa giỏ hàng</string>
+    <string name="book_table">Đặt bàn</string>
+    <string name="my_reservations">Đơn của tôi</string>
+    <string name="select_date">Chọn ngày</string>
+    <string name="select_time">Chọn giờ</string>
+    <string name="number_of_guests">Số lượng khách</string>
+    <string name="note">Ghi chú</string>
+
+
 </resources>

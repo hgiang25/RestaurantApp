@@ -37,7 +37,7 @@ public class GeminiService {
     
     // ⚠️ QUAN TRỌNG: Thay API Key của bạn vào đây
     // Lấy API Key tại: https://aistudio.google.com/app/apikey
-    private static final String GEMINI_API_KEY = "YOUR_GEMINI_API_KEY";
+    private static final String GEMINI_API_KEY = "AIzaSyB_xiwgVncz3V2PX5RdIRtREXF6FQ8pnq8";
     
     private static final String GEMINI_API_URL = 
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
